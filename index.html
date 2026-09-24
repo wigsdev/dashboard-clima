@@ -38,23 +38,148 @@
       <header class="header">
         <div class="header-container container">
           <div class="logo">
-            <span class="logo-icon">🌤️</span>
+            <span class="logo-icon" aria-hidden="true">🌤️</span>
             <h1 class="logo-name">Weather Dashboard</h1>
+          </div>
+          <div id="header-actions" class="header-actions">
+            <!-- Espacio reservado para controles adicionales (ejemplo: selector ºC/ºF en T-12) -->
           </div>
         </div>
       </header>
-
+      <!-- Contenido principal-->
       <main class="main container">
-        <!-- Contenido principal a estructurar en T-02 -->
+        <!-- 1. Sección de búsqueda-->
+        <section class="search-section" aria-label="Búsqueda de ciudades">
+          <form id="search-form" class="search-form" novalidate>
+            <div class="search-input-group">
+              <label for="search-input" class="sr-only">Nombre de la ciudad</label>
+              <input
+                type="text"
+                id="search-input"
+                class="search-input"
+                placeholder="Introduce una ciudad (ej. Cajamarca, Madrid...)"
+                autocomplete="off"
+                required
+              />
+              <button id="btn-search" class="btn btn-primary btn-search" type="submit">
+                Buscar
+              </button>
+            </div>
+            <p id="search-feedback" class="search-feedback hidden" role="alert"></p>
+          </form>
+        </section>
+
+        <!-- 2. Estado de carga (Spinner)-->
+        <div
+          id="loading-spinner"
+          class="loader-wrapper hidden"
+          aria-live="polite"
+          aria-busy="false"
+        >
+          <div class="spinner"></div>
+          <p class="loader-text">Consultando información meteorológica...</p>
+        </div>
+
+        <!-- 3. Estado de error-->
+        <div id="error-card" class="error-card hidden" role="alert">
+          <div class="error-icon" aria-hidden="true">⚠️</div>
+          <div class="error-content">
+            <h3 class="error-title">No se pudo obtener el clima</h3>
+            <p id="error-message" class="error-message"></p>
+          </div>
+        </div>
+
+        <!-- 4. Sección de resultado del clima-->
+        <section
+          id="weather-container"
+          class="weather-section hidden"
+          aria-label="Resultados meteorológicos"
+        >
+          <article id="weather-card" class="weather-card">
+            <header class="weather-card-header">
+              <div>
+                <span class="weather-label">Condición Actual</span>
+                <h2 id="weather-city-name" class="weather-city-name">--</h2>
+              </div>
+              <span id="weather-badge" class="badge badge-condition">--</span>
+            </header>
+
+            <div class="weather-main-group">
+              <div class="weather-temp-wrapper">
+                <span id="weather-temp" class="weather-temp">--</span>
+                <span id="weather-unit" class="weather-unit">ºC</span>
+              </div>
+              <div class="weather-condition-group">
+                <div id="weather-icon" class="weather-icon" aria-hidden="true">🌤️</div>
+                <p id="weather-condition" class="weather-condition">--</p>
+              </div>
+            </div>
+
+            <div class="weather-metrics">
+              <div class="metric-item">
+                <span class="metric-icon" aria-hidden="true">🌡️</span>
+                <div class="metric-info">
+                  <span class="metric-label">Sensación</span>
+                  <span id="weather-apparent" class="metric-value">--</span>
+                </div>
+              </div>
+
+              <div class="metric-item">
+                <span class="metric-icon" aria-hidden="true">💧</span>
+                <div class="metric-info">
+                  <span class="metric-label">Humedad</span>
+                  <span id="weather-humidity" class="metric-value">--</span>
+                </div>
+              </div>
+
+              <div class="metric-item">
+                <span class="metric-icon" aria-hidden="true">💨</span>
+                <div class="metric-info">
+                  <span class="metric-label">Viento</span>
+                  <span id="weather-wind" class="metric-value">--</span>
+                </div>
+              </div>
+            </div>
+          </article>
+        </section>
+
+        <!-- 5. Sección de Historial de Búsqueda-->
+        <section
+          id="history-container"
+          class="history-section"
+          aria-label="Historial de ciudades consultadas"
+        >
+          <div class="history-header">
+            <div class="history-title-group">
+              <h3 class="history-title">Historial de búsquedas</h3>
+              <span id="history-count" class="history-count">(0)</span>
+            </div>
+            <button id="btn-clear-history" class="btn btn-secondary btn-sm btn-clear" type="button">
+              Limpiar historial
+            </button>
+          </div>
+          <div id="history-list" class="history-list">
+            <p id="history-empty" class="history-empty">
+              No hay búsquedas recientes. Las ciudades consultadas aparecerán aquí.
+            </p>
+            <!-- Los chips interactivos (.history-chip) se inyectarán aquí con JavaScript -->
+          </div>
+        </section>
       </main>
 
+      <!-- Pie de Página-->
       <footer class="footer">
         <div class="footer-container container">
           <p>Weather Dashboard © 2026 — Proyecto Integrador G4</p>
+          <p class="footer-credits">Datos provistos por Open-Meteo</p>
         </div>
       </footer>
     </div>
 
+    <!-- Contenedor de Notificaciones Toast Flotantes -->
+    <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+    <!-- Punto de Entrada JavaScript (Módulo ES6)-->
     <script type="module" src="js/app.js"></script>
   </body>
 </html>
