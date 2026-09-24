@@ -1,0 +1,41 @@
+/* ==============================================================================
+   Weather Dashboard — Estilos Base
+   Diseño completo a implementar en T-03
+   Convenciones y CSS Moderno: Ver docs/diseno.md y docs/guia-desarrollo.md
+   ============================================================================== */
+
+:root {
+	--font-main: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont,
+		"Segoe UI", Roboto, sans-serif;
+	--bg-body: #f8fafc;
+	--text-primary: #0f172a;
+	--max-width: 52rem;
+}
+
+html {
+	box-sizing: border-box;
+}
+
+*,
+*::before,
+*::after {
+	box-sizing: inherit;
+	margin: 0;
+	padding: 0;
+}
+
+body {
+	font-family: var(--font-main);
+	background-color: var(--bg-body);
+	color: var(--text-primary);
+	line-height: 1.5;
+	min-height: 100vh;
+}
+
+/* Contenedor adaptativo con CSS Moderno: propiedades lógicas y clamp fluido */
+.container {
+	width: 100%;
+	max-width: var(--max-width);
+	margin-inline: auto;
+	padding-inline: clamp(1rem, 0.38rem + 2.72vw, 2.5rem);
+}

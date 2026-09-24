@@ -1,0 +1,36 @@
+{
+  "name": "dashboard-clima",
+  "version": "0.1.0",
+  "description": "Weather Dashboard — Aplicación web interactiva para consulta meteorológica con POO, Promesas, async/await y JavaScript Vanilla.",
+  "main": "index.html",
+  "scripts": {
+    "start": "open index.html || xdg-open index.html || start index.html",
+    "format": "npx prettier --write .",
+    "format:check": "npx prettier --check ."
+  },
+  "keywords": [
+    "javascript",
+    "vanilla-js",
+    "weather",
+    "dashboard",
+    "clima",
+    "poo",
+    "oop",
+    "async-await",
+    "promises",
+    "open-meteo",
+    "html5",
+    "css3",
+    "responsive"
+  ],
+  "author": "wigsdev",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wigsdev/dashboard-clima.git"
+  },
+  "bugs": {
+    "url": "https://github.com/wigsdev/dashboard-clima/issues"
+  },
+  "homepage": "https://github.com/wigsdev/dashboard-clima#readme"
+}

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="cloud-back" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#94a3b8"/>
+      <stop offset="100%" stop-color="#64748b"/>
+    </linearGradient>
+    <linearGradient id="cloud-front" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#cbd5e1"/>
+    </linearGradient>
+    <filter id="cloudy-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#0f172a" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+  <!-- Background Cloud -->
+  <path d="M26 36h24a8 8 0 0 0 1.5-15.8A11 11 0 0 0 31 18a8 8 0 0 0-5 18z" 
+        fill="url(#cloud-back)"/>
+  <!-- Foreground Main Cloud -->
+  <path d="M14 48h30a10 10 0 0 0 2-19.8A13 13 0 0 0 20 27a9 9 0 0 0-6 21z" 
+        fill="url(#cloud-front)" filter="url(#cloudy-shadow)"/>
+</svg>
