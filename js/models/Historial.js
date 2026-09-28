@@ -38,5 +38,4 @@ export class Historial {
 
 }
 
-const historialPrueba = new Historial ();
 
