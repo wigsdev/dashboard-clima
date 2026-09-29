@@ -296,6 +296,15 @@ Generado por `DomRenderer.mostrarToast(mensaje, tipo)`:
 </div>
 ```
 
+### 5.3 Selector de Unidades (`.unit-selector`)
+Generado por `DomRenderer.renderizarSelectorUnidades(unidadActual, callback)` en `#header-actions`:
+```html
+<div class="unit-selector">
+  <button type="button" class="unit-btn active" data-unit="C">°C</button>
+  <button type="button" class="unit-btn" data-unit="F">°F</button>
+</div>
+```
+
 ---
 
 ## 6. Selectores JavaScript (Referencia Rápida)
@@ -343,7 +352,8 @@ const btnClearHistory = document.getElementById('btn-clear-history');
 | `ocultarError()` | — | Oculta la tarjeta de error. |
 | `mostrarFeedbackBusqueda(msg)` | `string` | Muestra advertencia bajo el input si está vacío. |
 | `renderizarClima(clima, unidad)` | `Clima, string` | Actualiza todos los elementos de la tarjeta con `textContent`. |
-| `renderizarHistorial(ciudades)` | `string[]` | Crea dinámicamente los chips de historial con `createElement`. |
+| `renderizarHistorial(ciudades)` | `string[]` | Crea dinámicamente los chips de historial con `createElement` y `replaceChildren`. |
+| `renderizarSelectorUnidades(unidad, cb)` | `string, Function` | Genera botones °C/°F en `#header-actions` y vincula el cambio de unidad. |
 | `mostrarToast(mensaje, tipo)` | `string, string` | Inyecta un aviso temporal en `#toast-container` con auto-remove. |
 
 ---
@@ -384,30 +394,30 @@ export class Clima {
     this.codigoWmo = codigoWmo;
     this.fechaHora = fechaHora;
   }
-  obtenerUbicacionCompleta() { /* ciudad, país */ }
-  obtenerTemperaturaFormateada(unidad = 'C') { /* °C o °F */ }
-  obtenerSensacionFormateada(unidad = 'C') { /* °C o °F */ }
+  obtenerUbicacionCompleta() { return `${this.ciudad}, ${this.pais}`; }
+  obtenerTemperatura(unidad = 'C') { /* Retorna temperatura en °C o convertida a °F */ }
+  obtenerSensacion(unidad = 'C') { /* Retorna sensación en °C o convertida a °F */ }
   esCalido() { return this.temperatura >= 24; }
-  obtenerResumen() { /* Síntesis de texto */ }
+  obtenerResumen() { /* Síntesis de texto meteorológico */ }
 }
 ```
 
 ### 9.2 Clase `Historial` (`js/models/Historial.js`)
 ```javascript
 export class Historial {
-  constructor({ limiteMaximo = 8, storageKey = 'weather_dashboard_history' } = {}) {
+  constructor() {
     this._ciudades = [];
-    this.limiteMaximo = limiteMaximo;
-    this.storageKey = storageKey;
+    this.limiteMaximo = 8;
+    this.storageKey = 'weather_dashboard_history';
     this.cargarDeStorage();
   }
   agregar(ciudad) { /* unshift sin duplicados, respeta límite y guarda */ }
   eliminar(ciudad) { /* filter y guarda */ }
-  limpiar() { /* vacía array y guarda */ }
+  limpiar() { /* vacía array y elimina clave de storage */ }
   obtenerTodas() { return [...this._ciudades]; } /* Inmutable */
   get total() { return this._ciudades.length; }
-  guardarEnStorage() { /* localStorage.setItem */ }
-  cargarDeStorage() { /* localStorage.getItem */ }
+  guardarEnStorage() { /* localStorage.setItem con try/catch */ }
+  cargarDeStorage() { /* localStorage.getItem con try/catch */ }
 }
 ```
 
@@ -465,8 +475,8 @@ export class Historial {
 | **Arreglos: inmutabilidad** | `[...this._ciudades]` / `.slice()` | `Historial.obtenerTodas()` |
 | **Arreglos: transformación visual** | `.map()` | `DomRenderer.renderizarHistorial(ciudades)` |
 | **Asincronía: peticiones** | `fetch(url)` | `WeatherService.buscarCoordenadas` y `obtenerPronostico` |
-| **Asincronía: promesas modernas** | `async / await` | `WeatherService.consultarClima` y `App.ejecutarBusqueda` |
-| **Control de excepciones** | `try...catch...finally` | `WeatherService` y `App.ejecutarBusqueda` |
+| **Asincronía: promesas modernas** | `async / await` | `WeatherService.consultarClima` y `App.buscar` |
+| **Control de excepciones** | `try...catch...finally` | `WeatherService` y `App.buscar` |
 | **POO: instanciación** | `new Clima(...)`, `new Historial(...)` | `WeatherService` y `App` |
 | **DOM: creación segura** | `document.createElement()`, `.textContent` | `DomRenderer` |
 | **DOM: manipulación de hijos** | `.replaceChildren(...)` | `DomRenderer.renderizarHistorial` |
@@ -477,10 +487,11 @@ export class Historial {
 
 | Evento | Elemento | Disparador | Acción |
 |---|---|---|---|
-| `submit` | `#search-form` | Clic en `#btn-search` o presionar `Enter` | `e.preventDefault()`, valida input y llama a `ejecutarBusqueda()` |
+| `submit` | `#search-form` | Clic en `#btn-search` o presionar `Enter` | `e.preventDefault()`, valida input y llama a `buscar(texto)` |
 | `input` | `#search-input` | Al escribir en el input | Limpia feedback de error si existía |
 | `click` (delegado) | `#history-list` | Clic en `.history-chip` | Extrae `data-city`, setea el input y consulta inmediatamente |
 | `click` | `#btn-clear-history` | Clic en el botón | Invoca `historial.limpiar()`, actualiza vista y emite toast |
+| `click` | `.unit-btn` | Clic en botón °C o °F en `#header-actions` | Conmuta unidad activa y refresca la temperatura en pantalla |
 | `DOMContentLoaded` | `document` | Al cargar la página | Instancia clases, registra eventos y carga historial de storage |
 
 ---
@@ -526,13 +537,13 @@ Dispara evento `DOMContentLoaded`
        ▼
 Instancia `const app = new App()`
        ├── new WeatherService()
-       ├── new Historial({ limiteMaximo: 8 }) ──► Carga de localStorage
+       ├── new Historial() ──► Carga automáticamente de localStorage
        └── new DomRenderer()
        │
        ▼
 Ejecuta `app.iniciar()`
-       ├── `registrarEventos()` (submit, input, click delegado)
-       └── `renderizarEstadoInicial()` ──► Renderiza chips de localStorage
+       ├── `configurarEventos()` (submit, input, click delegado, limpiar)
+       └── `cargarEstadoInicial()` ──► Renderiza chips y selector de unidades
 ```
 
 ---
