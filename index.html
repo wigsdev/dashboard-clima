@@ -2,34 +2,34 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <meta
-      name="description"
       content="Weather Dashboard — Consulta meteorológica en tiempo real mediante API externa con JavaScript Vanilla y POO."
+      name="description"
     />
     <title>Weather Dashboard | Clima en Tiempo Real</title>
 
     <!-- Favicon e Identidad -->
-    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+    <link href="assets/favicon.svg" rel="icon" type="image/svg+xml" />
 
     <!-- Open Graph / Redes Sociales -->
-    <meta property="og:type" content="website" />
-    <meta property="og:title" content="Weather Dashboard | Clima en Tiempo Real" />
+    <meta content="website" property="og:type" />
+    <meta content="Weather Dashboard | Clima en Tiempo Real" property="og:title" />
     <meta
-      property="og:description"
       content="Consulta meteorológica en tiempo real mediante API externa con JavaScript Vanilla y POO."
+      property="og:description"
     />
-    <meta property="og:image" content="assets/img/og-preview.png" />
+    <meta content="assets/img/og-preview.png" property="og:image" />
 
     <!-- Tipografía Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin href="https://fonts.gstatic.com" rel="preconnect" />
     <link
       href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
 
-    <link rel="stylesheet" href="css/styles.css" />
+    <link href="css/styles.css" rel="stylesheet" />
   </head>
 
   <body>
@@ -38,10 +38,10 @@
       <header class="header">
         <div class="header-container container">
           <div class="logo">
-            <span class="logo-icon" aria-hidden="true">🌤️</span>
+            <span aria-hidden="true" class="logo-icon">🌤️</span>
             <h1 class="logo-name">Weather Dashboard</h1>
           </div>
-          <div id="header-actions" class="header-actions">
+          <div class="header-actions" id="header-actions">
             <!-- Espacio reservado para controles adicionales (ejemplo: selector ºC/ºF en T-12) -->
           </div>
         </div>
@@ -49,94 +49,94 @@
       <!-- Contenido principal-->
       <main class="main container">
         <!-- 1. Sección de búsqueda-->
-        <section class="search-section" aria-label="Búsqueda de ciudades">
-          <form id="search-form" class="search-form" novalidate>
+        <section aria-label="Búsqueda de ciudades" class="search-section">
+          <form class="search-form" id="search-form" novalidate>
             <div class="search-input-group">
-              <label for="search-input" class="sr-only">Nombre de la ciudad</label>
+              <label class="sr-only" for="search-input">Nombre de la ciudad</label>
               <input
-                type="text"
-                id="search-input"
-                class="search-input"
-                placeholder="Introduce una ciudad (ej. Cajamarca, Madrid...)"
                 autocomplete="off"
+                class="search-input"
+                id="search-input"
+                placeholder="Introduce una ciudad (ej. Cajamarca, Madrid...)"
                 required
+                type="text"
               />
-              <button id="btn-search" class="btn btn-primary btn-search" type="submit">
+              <button class="btn btn-primary btn-search" id="btn-search" type="submit">
                 Buscar
               </button>
             </div>
-            <p id="search-feedback" class="search-feedback hidden" role="alert"></p>
+            <p class="search-feedback hidden" id="search-feedback" role="alert"></p>
           </form>
         </section>
 
         <!-- 2. Estado de carga (Spinner)-->
         <div
-          id="loading-spinner"
-          class="loader-wrapper hidden"
-          aria-live="polite"
           aria-busy="false"
+          aria-live="polite"
+          class="loader-wrapper hidden"
+          id="loading-spinner"
         >
           <div class="spinner"></div>
           <p class="loader-text">Consultando información meteorológica...</p>
         </div>
 
         <!-- 3. Estado de error-->
-        <div id="error-card" class="error-card hidden" role="alert">
-          <div class="error-icon" aria-hidden="true">⚠️</div>
+        <div class="error-card hidden" id="error-card" role="alert">
+          <div aria-hidden="true" class="error-icon">⚠️</div>
           <div class="error-content">
             <h3 class="error-title">No se pudo obtener el clima</h3>
-            <p id="error-message" class="error-message"></p>
+            <p class="error-message" id="error-message"></p>
           </div>
         </div>
 
         <!-- 4. Sección de resultado del clima-->
         <section
-          id="weather-container"
-          class="weather-section hidden"
           aria-label="Resultados meteorológicos"
+          class="weather-section hidden"
+          id="weather-container"
         >
-          <article id="weather-card" class="weather-card">
+          <article class="weather-card" id="weather-card">
             <header class="weather-card-header">
               <div>
                 <span class="weather-label">Condición Actual</span>
-                <h2 id="weather-city-name" class="weather-city-name">--</h2>
+                <h2 class="weather-city-name" id="weather-city-name">Cajamarca, Peru</h2>
               </div>
-              <span id="weather-badge" class="badge badge-condition">--</span>
+              <span class="badge badge-condition" id="weather-badge">Parcialmente Nublado</span>
             </header>
 
             <div class="weather-main-group">
               <div class="weather-temp-wrapper">
-                <span id="weather-temp" class="weather-temp">--</span>
-                <span id="weather-unit" class="weather-unit">ºC</span>
+                <span class="weather-temp" id="weather-temp">18</span>
+                <span class="weather-unit" id="weather-unit">ºC</span>
               </div>
               <div class="weather-condition-group">
-                <div id="weather-icon" class="weather-icon" aria-hidden="true">🌤️</div>
-                <p id="weather-condition" class="weather-condition">--</p>
+                <div aria-hidden="true" class="weather-icon" id="weather-icon">🌤️</div>
+                <p class="weather-condition" id="weather-condition">--</p>
               </div>
             </div>
 
             <div class="weather-metrics">
               <div class="metric-item">
-                <span class="metric-icon" aria-hidden="true">🌡️</span>
+                <span aria-hidden="true" class="metric-icon">🌡️</span>
                 <div class="metric-info">
                   <span class="metric-label">Sensación</span>
-                  <span id="weather-apparent" class="metric-value">--</span>
+                  <span class="metric-value" id="weather-apparent">17 °C</span>
                 </div>
               </div>
 
               <div class="metric-item">
-                <span class="metric-icon" aria-hidden="true">💧</span>
+                <span aria-hidden="true" class="metric-icon">💧</span>
                 <div class="metric-info">
                   <span class="metric-label">Humedad</span>
-                  <span id="weather-humidity" class="metric-value">--</span>
+                  <span class="metric-value" id="weather-humidity">65 %</span>
                 </div>
               </div>
 
               <div class="metric-item">
-                <span class="metric-icon" aria-hidden="true">💨</span>
+                <span aria-hidden="true" class="metric-icon">💨</span>
                 <div class="metric-info">
                   <span class="metric-label">Viento</span>
-                  <span id="weather-wind" class="metric-value">--</span>
+                  <span class="metric-value" id="weather-wind">12 km/h</span>
                 </div>
               </div>
             </div>
@@ -145,21 +145,21 @@
 
         <!-- 5. Sección de Historial de Búsqueda-->
         <section
-          id="history-container"
-          class="history-section"
           aria-label="Historial de ciudades consultadas"
+          class="history-section"
+          id="history-container"
         >
           <div class="history-header">
             <div class="history-title-group">
               <h3 class="history-title">Historial de búsquedas</h3>
-              <span id="history-count" class="history-count">(0)</span>
+              <span class="history-count" id="history-count">(0)</span>
             </div>
-            <button id="btn-clear-history" class="btn btn-secondary btn-sm btn-clear" type="button">
+            <button class="btn btn-secondary btn-sm btn-clear" id="btn-clear-history" type="button">
               Limpiar historial
             </button>
           </div>
-          <div id="history-list" class="history-list">
-            <p id="history-empty" class="history-empty">
+          <div class="history-list" id="history-list">
+            <p class="history-empty" id="history-empty">
               No hay búsquedas recientes. Las ciudades consultadas aparecerán aquí.
             </p>
             <!-- Los chips interactivos (.history-chip) se inyectarán aquí con JavaScript -->
@@ -171,15 +171,20 @@
       <footer class="footer">
         <div class="footer-container container">
           <p>Weather Dashboard © 2026 — Proyecto Integrador G4</p>
-          <p class="footer-credits">Datos provistos por Open-Meteo</p>
+          <p class="footer-credits">
+            Datos provistos por
+            <a href="https://open-meteo.com" rel="noopener noreferrer" target="_blank">
+              Open-Meteo
+            </a>
+          </p>
         </div>
       </footer>
     </div>
 
     <!-- Contenedor de Notificaciones Toast Flotantes -->
-    <div id="toast-container" class="toast-container" aria-live="polite"></div>
+    <div aria-live="polite" class="toast-container" id="toast-container"></div>
 
     <!-- Punto de Entrada JavaScript (Módulo ES6)-->
-    <script type="module" src="js/app.js"></script>
+    <script src="js/app.js" type="module"></script>
   </body>
 </html>

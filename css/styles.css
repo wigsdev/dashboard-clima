@@ -3,39 +3,402 @@
    Diseño completo a implementar en T-03
    Convenciones y CSS Moderno: Ver docs/diseno.md y docs/guia-desarrollo.md
    ============================================================================== */
+@layer reset, base, layout, components, utilities;
 
-:root {
-	--font-main: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont,
-		"Segoe UI", Roboto, sans-serif;
-	--bg-body: #f8fafc;
-	--text-primary: #0f172a;
-	--max-width: 52rem;
+@layer reset {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  *:not(dialog) {
+    margin: 0;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      interpolate-size: allow-keywords;
+    }
+  }
+
+  img,
+  picture,
+  video,
+  canvas,
+  svg {
+    display: block;
+    max-width: 100%;
+  }
+
+  input,
+  button,
+  textarea,
+  select {
+    font: inherit;
+  }
+
+  p,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    overflow-wrap: break-word;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    text-wrap: balance;
+  }
+
+  #root,
+  #__next {
+    isolation: isolate;
+  }
 }
 
-html {
-	box-sizing: border-box;
-}
+@layer base {
+  :root {
+    /* Colores de marca y superficies */
+    --color-primary: #0284c7; /* Azul cielo meteorológico */
+    --color-primary-hover: #0369a1;
+    --color-accent: #f59e0b; /* Ámbar cálido / sol */
+    --bg-body: #f8fafc; /* Fondo suave neutro */
+    --bg-surface: #ffffff; /* Superficie de tarjetas */
+    --bg-surface-elevated: #f1f5f9; /* Superficie secundaria / métricas */
+    --border-color: #e2e8f0;
+    --border-focus: #38bdf8;
 
-*,
-*::before,
-*::after {
-	box-sizing: inherit;
-	margin: 0;
-	padding: 0;
-}
+    /* Textos */
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #94a3b8;
+    --text-inverse: #ffffff;
 
-body {
-	font-family: var(--font-main);
-	background-color: var(--bg-body);
-	color: var(--text-primary);
-	line-height: 1.5;
-	min-height: 100vh;
+    /* Estados */
+    --badge-condition-bg: #e0f2fe;
+    --badge-condition-text: #0369a1;
+    --error-bg: #fef2f2;
+    --error-text: hsl(0, 70%, 35.3%);
+    --error-border: #fecaca;
+
+    /* Tipografía y medidas */
+    --font-main:
+      'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --radius-sm: 0.375rem; /* 6px */
+    --radius-md: 0.625rem; /* 10px */
+    --radius-lg: 1rem; /* 16px */
+    --radius-full: 9999px;
+    --max-width: 54rem; /* ~864px */
+
+    /* font size */
+
+    --font-size--2: clamp(0.6944rem, 0.6791rem + 0.0681vw, 0.72rem);
+    --font-size--1: clamp(0.8333rem, 0.7933rem + 0.1778vw, 0.9rem);
+    --font-size-0: clamp(1rem, 0.925rem + 0.3333vw, 1.125rem);
+    --font-size-1: clamp(1.2rem, 1.0763rem + 0.55vw, 1.4063rem);
+    --font-size-2: clamp(1.44rem, 1.2493rem + 0.8475vw, 1.7578rem);
+    --font-size-3: clamp(1.728rem, 1.4464rem + 1.2514vw, 2.1973rem);
+    --font-size-4: clamp(2.0736rem, 1.6698rem + 1.7946vw, 2.7466rem);
+    --font-size-5: clamp(2.4883rem, 1.9214rem + 2.5198vw, 3.4332rem);
+
+    /* spacing */
+    --space-3xs: clamp(0.25rem, 0.2125rem + 0.1667vw, 0.3125rem);
+    --space-2xs: clamp(0.5rem, 0.4625rem + 0.1667vw, 0.5625rem);
+    --space-xs: clamp(0.75rem, 0.675rem + 0.3333vw, 0.875rem);
+    --space-s: clamp(1rem, 0.925rem + 0.3333vw, 1.125rem);
+    --space-m: clamp(1.5rem, 1.3875rem + 0.5vw, 1.6875rem);
+    --space-l: clamp(2rem, 1.85rem + 0.6667vw, 2.25rem);
+    --space-xl: clamp(3rem, 2.775rem + 1vw, 3.375rem);
+    --space-2xl: clamp(4rem, 3.7rem + 1.3333vw, 4.5rem);
+    --space-3xl: clamp(6rem, 5.55rem + 2vw, 6.75rem);
+  }
+
+  body {
+    min-block-size: 100svh;
+    font-family: var(--font-main);
+    font-size: var(--font-size-0);
+    line-height: 1.5;
+    color: var(--text-primary);
+    background-color: var(--bg-body);
+  }
 }
 
 /* Contenedor adaptativo con CSS Moderno: propiedades lógicas y clamp fluido */
-.container {
-	width: 100%;
-	max-width: var(--max-width);
-	margin-inline: auto;
-	padding-inline: clamp(1rem, 0.38rem + 2.72vw, 2.5rem);
+
+@layer layout {
+  .container {
+    inline-size: min(100%, var(--max-width));
+    padding-inline: clamp(1rem, 0.38rem + 2.72vw, 2.5rem);
+    margin-inline: auto;
+  }
+
+  .main > * + * {
+    margin-block-start: 0.5rem;
+  }
+
+  .app-layout {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    min-block-size: 100svh;
+  }
+}
+
+@layer components {
+  .header {
+    padding-block: var(--space-xs);
+    padding-inline: var(--space-xs);
+  }
+
+  .logo {
+    display: flex;
+    gap: var(--space-2xs);
+    align-items: center;
+  }
+
+  .logo-icon,
+  .logo-name {
+    font-size: var(--font-size-1);
+  }
+
+  .search-input-group {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-2xs);
+  }
+
+  .search-input {
+    padding-inline: var(--space-2xs);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+  }
+
+  .search-input:focus {
+    border: 1px solid var(--border-focus);
+  }
+
+  .btn {
+    padding-block: var(--space-3xs);
+    padding-inline: var(--space-xs);
+    font-size: var(--font-size--1);
+    font-weight: 600;
+    color: var(--text-inverse);
+    background-color: var(--color-primary);
+    border: none;
+    border-radius: var(--radius-sm);
+  }
+
+  .btn:hover {
+    background-color: var(--color-primary-hover);
+  }
+
+  .loader-wrapper {
+    padding-block: var(--space-xs);
+    padding-inline: var(--space-xs);
+    background-color: hsl(from var(--color-primary) h s l / 0.2);
+    border: 1px solid var(--color-primary-hover);
+    border-radius: var(--radius-sm);
+  }
+
+  .loader-text {
+    font-size: var(--font-size--1);
+    font-weight: 500;
+  }
+
+  .error-card {
+    padding-block: var(--space-xs);
+    padding-inline: var(--space-xs);
+    text-align: center;
+    background-color: hsl(from var(--error-border) h s l / 0.5);
+    border: 1px solid var(--error-border);
+    border-radius: var(--radius-sm);
+  }
+
+  .error-icon,
+  .error-title {
+    font-size: var(--font-size-1);
+    font-weight: 700;
+    letter-spacing: -2%;
+  }
+
+  .weather-card-header {
+    line-height: 1.4;
+  }
+
+  .weather-label {
+    font-size: var(--font-size-0);
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .weather-city-name {
+    font-size: var(--font-size-0);
+    font-weight: 600;
+  }
+
+  .badge-condition {
+    font-size: var(--font-size--1);
+  }
+
+  .weather-main-group {
+    display: flex;
+    gap: var(--space-2xs);
+    align-items: center;
+    justify-content: space-evenly;
+    margin-block-end: var(--space-2xs);
+  }
+
+  .weather-temp,
+  .weather-unit,
+  .weather-icon {
+    font-size: clamp(3rem, 2.55rem + 2vw, 3.75rem);
+    font-weight: 800;
+  }
+
+  .weather-metrics {
+    display: grid;
+    gap: var(--space-2xs);
+  }
+
+  .metric-item {
+    display: flex;
+    gap: var(--space-2xs);
+    align-items: center;
+    padding-block: var(--space-xs);
+    padding-inline: var(--space-xs);
+    background-color: var(--bg-body);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+  }
+
+  .metric-icon {
+    font-size: clamp(1rem, 0.55rem + 2vw, 1.75rem);
+  }
+  .metric-label,
+  .metric-value {
+    font-size: var(--font-size-0);
+    font-weight: 600;
+  }
+
+  .history-header,
+  .history-title-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2xs);
+    align-items: center;
+  }
+
+  .history-header {
+    justify-content: space-between;
+  }
+
+  .history-title {
+    font-size: var(--font-size-0);
+  }
+
+  .history-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3xs);
+  }
+
+  .history-item,
+  .history-chip {
+    padding-block: var(--space-3xs);
+    padding-inline: var(--space-2xs);
+    font-size: var(--font-size--1);
+    font-weight: 500;
+    background-color: hsl(from var(--color-accent) h s l / 0.2);
+    border-radius: var(--radius-sm);
+    /*Añadir para los botones <button> que genere JS se vean impecables: */
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-3xs);
+  }
+
+  .history-chip:hover {
+    background-color: hsl(from var(--color-accent) h s l / 0.35);
+  }
+
+  .search-section,
+  .weather-section,
+  .history-section {
+    padding-block: 0.75rem;
+    padding-inline: 0.75rem;
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+  }
+
+  .footer {
+    padding-block: var(--space-xs);
+    font-size: var(--font-size--1);
+    text-align: center;
+  }
+
+  @media screen and (min-width: 36em) {
+    .search-input-group {
+      grid-template-columns: 1fr auto;
+    }
+
+    .weather-card-header {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .weather-metrics {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .metric-info {
+      display: flex;
+      flex-direction: column;
+    }
+  }
+}
+
+@layer utilities {
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    white-space: nowrap;
+    border: 0;
+    clip-path: inset(50%);
+  }
+
+  .hidden {
+    display: none;
+  }
+}
+
+.spinner {
+  width: 2rem;
+  height: 2rem;
+  border: 3px solid hsl(from var(--color-primary) h s l / 0.2);
+  border-top-color: var(--color-primary);
+  border-radius: var(--radius-full);
+  animation: spin 0.8s linear infinite;
+  margin-inline: auto;
+  margin-block-end: var(--space-2xs);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
