@@ -34,6 +34,9 @@ export class App {
     this.ui.renderizarSelectorUnidades(this.unidad, (nuevaUnidad) => {
       this.cambiarUnidad(nuevaUnidad);
     });
+
+    const ciudadInicial = ciudades.length > 0 ? ciudades[0] : 'Lima';
+    this.buscar(ciudadInicial);
   }
 
   // 3. Registra los escuchadores de eventos del usuario
