@@ -156,7 +156,50 @@
 @layer components {
   .header {
     padding-block: var(--space-xs);
+    border-block-end: 1px solid var(--border-color);
+    background-color: var(--bg-surface);
     padding-inline: var(--space-xs);
+  }
+
+  .header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-s);
+  }
+
+  /* Selector de unidades ºC / ºF (T-12) */
+  .unit-selector {
+    display: inline-flex;
+    align-items: center;
+    background-color: var(--bg-body);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-full);
+    padding: 3px;
+    gap: 2px;
+  }
+
+  .unit-btn {
+    padding-block: 0.25rem;
+    padding-inline: 0.65rem;
+    font-size: var(--font-size--1);
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .unit-btn:hover {
+    color: var(--text-primary);
+  }
+
+  .unit-btn.active {
+    color: var(--text-inverse);
+    background-color: var(--color-primary);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
   }
 
   .logo {
@@ -246,7 +289,17 @@
   }
 
   .badge-condition {
+    display: inline-flex;
+    align-items: center;
+    padding-block: 0.2rem;
+    padding-inline: 0.75rem;
     font-size: var(--font-size--1);
+    font-weight: 600;
+    border-radius: var(--radius-full);
+    background-color: var(--badge-condition-bg);
+    color: var(--badge-condition-text);
+    border: 1px solid hsl(from var(--badge-condition-text) h s l / 0.2);
+    align-self: flex-start;
   }
 
   .weather-main-group {
@@ -267,6 +320,75 @@
   .weather-metrics {
     display: grid;
     gap: var(--space-2xs);
+  }
+
+  /* Modificadores visuales de temperatura (T-12) */
+  .weather-card {
+    transition:
+      border-color 0.3s ease,
+      background 0.3s ease,
+      box-shadow 0.3s ease;
+  }
+
+  .weather-card.weather-card--warm {
+    border-color: hsl(from var(--color-accent) h s l / 0.5);
+    background: linear-gradient(
+      145deg,
+      var(--bg-surface) 0%,
+      hsl(from var(--color-accent) h s l / 0.08) 100%
+    );
+    box-shadow: 0 4px 20px hsl(from var(--color-accent) h s l / 0.12);
+  }
+
+  .weather-card.weather-card--warm .badge-condition {
+    background-color: hsl(from var(--color-accent) h s l / 0.18);
+    color: hsl(28, 90%, 35%);
+    border-color: hsl(from var(--color-accent) h s l / 0.35);
+  }
+
+  .weather-card.weather-card--cold {
+    border-color: hsl(199, 89%, 48%, 0.5);
+    background: linear-gradient(145deg, var(--bg-surface) 0%, hsl(199 89% 48% / 0.08) 100%);
+    box-shadow: 0 4px 20px hsl(199 89% 48% / 0.12);
+  }
+
+  .weather-card.weather-card--cold .badge-condition {
+    background-color: hsl(199, 89%, 48%, 0.15);
+    color: hsl(200, 95%, 35%);
+    border-color: hsl(199, 89%, 48%, 0.35);
+  }
+
+  /* Notificaciones Toast flotantes */
+  .toast-container {
+    position: fixed;
+    bottom: var(--space-s);
+    right: var(--space-s);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2xs);
+    pointer-events: none;
+  }
+
+  .toast {
+    padding-block: var(--space-2xs);
+    padding-inline: var(--space-s);
+    font-size: var(--font-size--1);
+    font-weight: 500;
+    color: var(--text-inverse);
+    background-color: var(--text-primary);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    pointer-events: auto;
+  }
+
+  .toast--success {
+    background-color: var(--color-primary);
+  }
+
+  .toast--warning {
+    background-color: hsl(from var(--color-accent) h s l / 0.95);
+    color: var(--text-primary);
   }
 
   .metric-item {
@@ -355,6 +477,9 @@
     .weather-card-header {
       display: flex;
       justify-content: space-between;
+      align-items: flex-start;
+      line-height: 1.4;
+      margin-block-end: var(--space-s);
     }
 
     .weather-metrics {
@@ -400,5 +525,31 @@
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+/* Micro-animaciones de entrada fluida (T-12) */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.weather-section:not(.hidden),
+.error-card:not(.hidden),
+.toast {
+  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .weather-section:not(.hidden),
+  .error-card:not(.hidden),
+  .toast {
+    animation: none;
   }
 }
