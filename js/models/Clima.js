@@ -82,4 +82,40 @@ export class Clima {
       `Humedad ${this.humedad} % y viento de ${this.viento} km/h. ${ambiente}`
     );
   }
+
+  // Mapea el código numérico de la API a su descripción en español e icono SVG
+  static mapearWMO(codigo) {
+    const mapa = {
+      0: { condicion: 'Cielo despejado', icono: 'assets/icons/weather/clear-day.svg' },
+      1: { condicion: 'Mayormente despejado', icono: 'assets/icons/weather/clear-day.svg' },
+      2: { condicion: 'Parcialmente nublado', icono: 'assets/icons/weather/partly-cloudy.svg' },
+      3: { condicion: 'Nublado', icono: 'assets/icons/weather/cloudy.svg' },
+      45: { condicion: 'Niebla', icono: 'assets/icons/weather/fog.svg' },
+      48: { condicion: 'Niebla con escarcha', icono: 'assets/icons/weather/fog.svg' },
+      51: { condicion: 'Llovizna ligera', icono: 'assets/icons/weather/drizzle.svg' },
+      53: { condicion: 'Llovizna moderada', icono: 'assets/icons/weather/drizzle.svg' },
+      55: { condicion: 'Llovizna densa', icono: 'assets/icons/weather/drizzle.svg' },
+      61: { condicion: 'Lluvia ligera', icono: 'assets/icons/weather/rain.svg' },
+      63: { condicion: 'Lluvia moderada', icono: 'assets/icons/weather/rain.svg' },
+      65: { condicion: 'Lluvia fuerte', icono: 'assets/icons/weather/rain.svg' },
+      71: { condicion: 'Nieve ligera', icono: 'assets/icons/weather/snow.svg' },
+      73: { condicion: 'Nieve moderada', icono: 'assets/icons/weather/snow.svg' },
+      75: { condicion: 'Nieve intensa', icono: 'assets/icons/weather/snow.svg' },
+      77: { condicion: 'Granos de nieve', icono: 'assets/icons/weather/snow.svg' },
+      80: { condicion: 'Chubascos ligeros', icono: 'assets/icons/weather/showers.svg' },
+      81: { condicion: 'Chubascos moderados', icono: 'assets/icons/weather/showers.svg' },
+      82: { condicion: 'Chubascos violentos', icono: 'assets/icons/weather/showers.svg' },
+      95: { condicion: 'Tormenta eléctrica', icono: 'assets/icons/weather/thunderstorm.svg' },
+      96: { condicion: 'Tormenta con granizo', icono: 'assets/icons/weather/thunderstorm.svg' },
+      99: { condicion: 'Tormenta fuerte con granizo', icono: 'assets/icons/weather/thunderstorm.svg' },
+    };
+
+    return (
+      mapa[codigo] || {
+        condicion: 'Condición variable',
+        icono: 'assets/icons/weather/partly-cloudy.svg',
+      }
+    );
+  }
 }
+
