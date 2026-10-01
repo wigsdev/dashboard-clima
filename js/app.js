@@ -3,7 +3,7 @@
  * Tarea T-08: Orquesta los eventos del usuario, las peticiones a la API y la actualización del DOM.
  */
 
-import { WeatherService } from './services/WeatherService.js';
+import { WeatherService, WeatherError, MENSAJES } from './services/WeatherService.js';
 import { Historial } from './models/Historial.js';
 import { DomRenderer } from './ui/DomRenderer.js';
 
@@ -14,12 +14,14 @@ export class App {
     this.ui = new DomRenderer();
 
     this.climaActual = null;
+    this.cargando = false; // evita peticiones simultáneas (T-10)
     this.unidad = localStorage.getItem('weather_dashboard_unit') || 'C';
   }
 
   // 1. Inicializa la aplicación y registra los eventos
   iniciar() {
     this.configurarEventos();
+    this.configurarEventosDeRed();
     this.cargarEstadoInicial();
   }
 
@@ -82,6 +84,16 @@ export class App {
     }
   }
 
+  // 3.5 Avisos cuando el navegador pierde o recupera la conexión (T-10)
+  configurarEventosDeRed() {
+    window.addEventListener('offline', () => {
+      this.ui.mostrarToast(MENSAJES.OFFLINE, 'warning');
+    });
+    window.addEventListener('online', () => {
+      this.ui.mostrarToast('Conexión restablecida.', 'success');
+    });
+  }
+
   // 4. Realiza la búsqueda asíncrona de clima de una ciudad
   async buscar(nombreCiudad) {
     const ciudad = (nombreCiudad || '').trim();
@@ -93,10 +105,25 @@ export class App {
       return;
     }
 
+    // Evita spam de peticiones mientras hay una en curso
+    if (this.cargando) {
+      return;
+    }
+
     this.ui.mostrarFeedbackBusqueda('');
+    this.ui.ocultarError();
+
+    // Detección proactiva de desconexión: ni siquiera se intenta la petición
+    if (!this.weatherService.estaOnline()) {
+      this.climaActual = null;
+      this.ui.mostrarError(MENSAJES.OFFLINE);
+      return;
+    }
+
+    this.cargando = true;
 
     try {
-      // Activar indicador visual de carga
+      // Activar indicador visual de carga (también deshabilita el botón)
       this.ui.mostrarCargando(true);
 
       // Petición asíncrona al servicio metereológico
@@ -116,10 +143,17 @@ export class App {
         'success'
       );
     } catch (error) {
-      // Manejo centralizado de errores visuales (404 o conexión)
-      this.ui.mostrarError(error.message);
+      // Gestión centralizada: la tarjeta anterior se oculta y se explica la causa
+      this.climaActual = null;
+      if (error instanceof WeatherError) {
+        this.ui.mostrarError(error.message);
+      } else {
+        console.error('Error inesperado en buscar():', error);
+        this.ui.mostrarError(MENSAJES.DESCONOCIDO);
+      }
     } finally {
-      // Garantizar que el spinner se apague siempre
+      // Garantizar que el spinner se apague y el botón se reactive siempre
+      this.cargando = false;
       this.ui.mostrarCargando(false);
     }
   }
