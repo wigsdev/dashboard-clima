@@ -1,108 +1,175 @@
 /**
  * Weather Dashboard — Renderizador de Interfaz (DomRenderer)
- * Tareas T-07 y T-10: toda la manipulación del DOM y los estados visuales.
- * No usa innerHTML: solo createElement, textContent y classList.
+ * Tarea T-07: Centraliza toda la manipulación del DOM, estados visuales y eventos de interfaz.
  */
 export class DomRenderer {
   constructor() {
-    const $ = (id) => document.getElementById(id);
-
-    this.searchForm = $('search-form');
-    this.searchInput = $('search-input');
-    this.btnSearch = $('btn-search');
-    this.searchFeedback = $('search-feedback');
-
-    this.loadingSpinner = $('loading-spinner');
-    this.errorCard = $('error-card');
-    this.errorMessage = $('error-message');
-
-    this.weatherContainer = $('weather-container');
-    this.weatherCityName = $('weather-city-name');
-    this.weatherBadge = $('weather-badge');
-    this.weatherTemp = $('weather-temp');
-    this.weatherUnit = $('weather-unit');
-    this.weatherIcon = $('weather-icon');
-    this.weatherCondition = $('weather-condition');
-    this.weatherApparent = $('weather-apparent');
-    this.weatherHumidity = $('weather-humidity');
-    this.weatherWind = $('weather-wind');
-
-    this.historyList = $('history-list');
-    this.historyCount = $('history-count');
-    this.historyEmpty = $('history-empty');
-    this.btnClearHistory = $('btn-clear-history');
-    this.headerActions = $('header-actions');
-    this.toastContainer = $('toast-container');
+    // 1. Formulario y Búsqueda
+    this.searchForm = document.getElementById('search-form');
+    this.searchInput = document.getElementById('search-input');
+    this.btnSearch = document.getElementById('btn-search');
+    this.searchFeedback = document.getElementById('search-feedback');
+    // 2. Estados de Carga y Error
+    this.loadingSpinner = document.getElementById('loading-spinner');
+    this.errorCard = document.getElementById('error-card');
+    this.errorMessage = document.getElementById('error-message');
+    // 3. Tarjeta del Clima y Métricas
+    this.weatherContainer = document.getElementById('weather-container');
+    this.weatherCard = document.getElementById('weather-card');
+    this.weatherCityName = document.getElementById('weather-city-name');
+    this.weatherBadge = document.getElementById('weather-badge');
+    this.weatherTemp = document.getElementById('weather-temp');
+    this.weatherUnit = document.getElementById('weather-unit');
+    this.weatherIcon = document.getElementById('weather-icon');
+    this.weatherCondition = document.getElementById('weather-condition');
+    this.weatherApparent = document.getElementById('weather-apparent');
+    this.weatherHumidity = document.getElementById('weather-humidity');
+    this.weatherWind = document.getElementById('weather-wind');
+    // 4. Historial de Búsquedas
+    this.historyContainer = document.getElementById('history-container');
+    this.historyList = document.getElementById('history-list');
+    this.historyCount = document.getElementById('history-count');
+    this.historyEmpty = document.getElementById('history-empty');
+    this.btnClearHistory = document.getElementById('btn-clear-history');
+    // 5. Cabecera y Notificaciones
+    this.headerActions = document.getElementById('header-actions');
+    this.toastContainer = document.getElementById('toast-container');
   }
 
+  // Muestra u oculta el spinner de carga y desactiva controles para evitar spam
   mostrarCargando(visible) {
-    this.loadingSpinner.classList.toggle('hidden', !visible);
-    this.loadingSpinner.setAttribute('aria-busy', String(visible));
-    this.btnSearch.disabled = visible;
-    this.btnSearch.setAttribute('aria-disabled', String(visible));
+    if (!this.loadingSpinner) return;
+    if (this.btnSearch) this.btnSearch.disabled = visible;
+    if (this.searchInput) this.searchInput.disabled = visible;
+    if (visible) {
+      this.loadingSpinner.classList.remove('hidden');
+      this.loadingSpinner.setAttribute('aria-busy', 'true');
+      this.ocultarError();
+      if (this.weatherContainer) this.weatherContainer.classList.add('hidden');
+    } else {
+      this.loadingSpinner.classList.add('hidden');
+      this.loadingSpinner.setAttribute('aria-busy', 'false');
+    }
   }
-
-  mostrarError(mensaje) {
-    this.weatherContainer.classList.add('hidden');
-    this.errorMessage.textContent = mensaje;
-    this.errorCard.classList.remove('hidden');
-  }
-
-  ocultarError() {
-    this.errorCard.classList.add('hidden');
-    this.errorMessage.textContent = '';
-  }
-
+  // Muestra u oculta la advertencia inline bajo el input si el campo está vacío
   mostrarFeedbackBusqueda(mensaje) {
-    this.searchFeedback.textContent = mensaje || '';
-    this.searchFeedback.classList.toggle('hidden', !mensaje);
+    if (!this.searchFeedback) return;
+    if (mensaje) {
+      this.searchFeedback.textContent = mensaje;
+      this.searchFeedback.classList.remove('hidden');
+    } else {
+      this.searchFeedback.textContent = '';
+      this.searchFeedback.classList.add('hidden');
+    }
   }
 
+  // Muestra la tarjeta de error con el mensaje correspondiente y oculta el clima previo
+  mostrarError(mensaje) {
+    if (!this.errorCard || !this.errorMessage) return;
+    this.errorMessage.textContent = mensaje || 'Ocurrió un error al consultar el clima.';
+    this.errorCard.classList.remove('hidden');
+    if (this.weatherContainer) {
+      this.weatherContainer.classList.add('hidden');
+    }
+    this.mostrarCargando(false);
+  }
+  // Oculta la tarjeta de error y limpia el mensaje
+  ocultarError() {
+    if (!this.errorCard) return;
+    this.errorCard.classList.add('hidden');
+    if (this.errorMessage) {
+      this.errorMessage.textContent = '';
+    }
+  }
+
+  // Actualiza todos los elementos de la tarjeta con los datos del objeto Clima
   renderizarClima(clima, unidad = 'C') {
-    this.ocultarError();
-
-    this.weatherCityName.textContent = clima.obtenerUbicacionCompleta();
-    this.weatherBadge.textContent = clima.condicion;
-    this.weatherTemp.textContent = String(clima.obtenerTemperatura(unidad));
-    this.weatherUnit.textContent = unidad === 'F' ? '°F' : '°C';
-    this.weatherIcon.textContent = clima.icono;
-    this.weatherCondition.textContent = clima.condicion;
-    this.weatherApparent.textContent = clima.obtenerSensacionFormateada(unidad);
-    this.weatherHumidity.textContent = `${clima.humedad} %`;
-    this.weatherWind.textContent = `${clima.viento} km/h`;
-
+    if (!clima || !this.weatherContainer) return;
+    const simbolo = unidad === 'F' ? '°F' : '°C';
+    // 1. Datos principales
+    if (this.weatherCityName) {
+      this.weatherCityName.textContent = clima.obtenerUbicacionCompleta();
+    }
+    if (this.weatherBadge) {
+      this.weatherBadge.textContent = clima.condicion;
+    }
+    if (this.weatherTemp) {
+      this.weatherTemp.textContent = clima.obtenerTemperatura(unidad);
+    }
+    if (this.weatherUnit) {
+      this.weatherUnit.textContent = simbolo;
+    }
+    if (this.weatherCondition) {
+      this.weatherCondition.textContent = clima.condicion;
+    }
+    // 2. Métricas secundarias
+    if (this.weatherApparent) {
+      this.weatherApparent.textContent = clima.obtenerSensacionFormateada(unidad);
+    }
+    if (this.weatherHumidity) {
+      this.weatherHumidity.textContent = `${clima.humedad} %`;
+    }
+    if (this.weatherWind) {
+      this.weatherWind.textContent = `${clima.viento} km/h`;
+    }
+    // 3. Renderizar imagen SVG de forma segura con createElement y replaceChildren
+    if (this.weatherIcon) {
+      const img = document.createElement('img');
+      img.src = clima.icono;
+      img.alt = clima.condicion;
+      this.weatherIcon.replaceChildren(img);
+    }
+    // 4. Modificadores visuales dinámicos según temperatura
+    if (this.weatherCard) {
+      this.weatherCard.classList.remove('weather-card--warm', 'weather-card--cold');
+      if (clima.esCalido ? clima.esCalido() : clima.temperatura >= 24) {
+        this.weatherCard.classList.add('weather-card--warm');
+      } else if (clima.temperatura < 10) {
+        this.weatherCard.classList.add('weather-card--cold');
+      }
+    }
+    // 5. Visibilidad de estados
     this.weatherContainer.classList.remove('hidden');
+    this.ocultarError();
+    this.mostrarCargando(false);
   }
 
-  renderizarHistorial(ciudades) {
+  // Construye dinámicamente los chips del historial con createElement y replaceChildren
+  renderizarHistorial(ciudades = []) {
+    if (!this.historyList || !this.historyCount) return;
+
     this.historyCount.textContent = `(${ciudades.length})`;
 
     if (ciudades.length === 0) {
-      this.historyList.replaceChildren(this.historyEmpty);
+      if (this.historyEmpty) {
+        this.historyEmpty.classList.remove('hidden');
+        this.historyList.replaceChildren(this.historyEmpty);
+      } else {
+        this.historyList.replaceChildren();
+      }
       return;
     }
 
+    if (this.historyEmpty) {
+      this.historyEmpty.classList.add('hidden');
+    }
+
     const chips = ciudades.map((ciudad) => {
-      const boton = document.createElement('button');
-      boton.type = 'button';
-      boton.className = 'history-chip';
-      boton.dataset.city = ciudad;
-
-      const icono = document.createElement('span');
-      icono.setAttribute('aria-hidden', 'true');
-      icono.textContent = '📍';
-
-      const nombre = document.createElement('span');
-      nombre.textContent = ciudad;
-
-      boton.append(icono, nombre);
-      return boton;
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'history-chip';
+      chip.dataset.city = ciudad;
+      chip.textContent = `📍 ${ciudad}`;
+      return chip;
     });
 
     this.historyList.replaceChildren(...chips);
   }
 
+  // Renderiza el selector de unidades (°C / °F) en la cabecera
   renderizarSelectorUnidades(unidadActual, callback) {
+    if (!this.headerActions) return;
+
     const contenedor = document.createElement('div');
     contenedor.className = 'unit-selector';
 
@@ -112,18 +179,29 @@ export class DomRenderer {
       boton.className = unidad === unidadActual ? 'unit-btn active' : 'unit-btn';
       boton.dataset.unit = unidad;
       boton.textContent = `°${unidad}`;
-      boton.addEventListener('click', () => callback(unidad));
+      boton.addEventListener('click', () => {
+        if (typeof callback === 'function') {
+          callback(unidad);
+        }
+      });
       contenedor.append(boton);
     });
 
     this.headerActions.replaceChildren(contenedor);
   }
 
-  mostrarToast(mensaje, tipo = 'info', duracion = 3500) {
+  // Muestra una notificación temporal flotante con auto-remoción
+  mostrarToast(mensaje, tipo = 'info', duracion = 3000) {
+    if (!this.toastContainer || !mensaje) return;
+
     const toast = document.createElement('div');
     toast.className = `toast toast--${tipo}`;
     toast.textContent = mensaje;
+
     this.toastContainer.append(toast);
-    setTimeout(() => toast.remove(), duracion);
+
+    setTimeout(() => {
+      toast.remove();
+    }, duracion);
   }
 }

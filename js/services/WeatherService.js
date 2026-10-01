@@ -1,144 +1,122 @@
 /**
  * Weather Dashboard — Servicio Meteorológico (API Service)
- * Tareas T-06 y T-10: consumo de Open-Meteo con gestión diferenciada de errores.
+ * Implementación completa en T-06
  */
+
 import { Clima } from '../models/Clima.js';
 
-const URL_GEOCODING = 'https://geocoding-api.open-meteo.com/v1/search';
-const URL_FORECAST = 'https://api.open-meteo.com/v1/forecast';
-const TIMEOUT_MS = 10000;
-
-export const MENSAJES = Object.freeze({
-  OFFLINE: 'Sin conexión a internet. Verifica tu red',
-  TIMEOUT: 'La consulta tardó demasiado en responder. Inténtalo de nuevo en unos segundos',
-  API: 'El servicio meteorológico no está disponible en este momento. Inténtalo más tarde',
-  DESCONOCIDO: 'Ocurrió un error inesperado. Inténtalo nuevamente',
-  noEncontrada: (ciudad) => `No se encontraron resultados para la ciudad '${ciudad}'`,
-});
-
-export class WeatherError extends Error {
-  constructor(tipo, mensaje) {
-    super(mensaje);
-    this.name = 'WeatherError';
-    this.tipo = tipo;
-  }
-}
-
-const WMO = Object.freeze({
-  0: { condicion: 'Cielo despejado', icono: '☀️' },
-  1: { condicion: 'Mayormente despejado', icono: '🌤️' },
-  2: { condicion: 'Parcialmente nublado', icono: '⛅' },
-  3: { condicion: 'Nublado', icono: '☁️' },
-  45: { condicion: 'Niebla', icono: '🌫️' },
-  48: { condicion: 'Niebla con escarcha', icono: '🌫️' },
-  51: { condicion: 'Llovizna ligera', icono: '🌧️' },
-  53: { condicion: 'Llovizna moderada', icono: '🌧️' },
-  55: { condicion: 'Llovizna densa', icono: '🌧️' },
-  61: { condicion: 'Lluvia ligera', icono: '🌧️' },
-  63: { condicion: 'Lluvia moderada', icono: '🌧️' },
-  65: { condicion: 'Lluvia intensa', icono: '⛈️' },
-  71: { condicion: 'Nieve ligera', icono: '❄️' },
-  73: { condicion: 'Nieve moderada', icono: '❄️' },
-  75: { condicion: 'Nieve fuerte', icono: '❄️' },
-  80: { condicion: 'Chubascos ligeros', icono: '🌦️' },
-  81: { condicion: 'Chubascos moderados', icono: '🌦️' },
-  82: { condicion: 'Chubascos violentos', icono: '⛈️' },
-  95: { condicion: 'Tormenta eléctrica', icono: '⛈️' },
-  96: { condicion: 'Tormenta con granizo', icono: '⛈️' },
-  99: { condicion: 'Tormenta con granizo fuerte', icono: '⛈️' },
-});
-
-const WMO_DESCONOCIDO = Object.freeze({ condicion: 'Condición no disponible', icono: '🌡️' });
-
 export class WeatherService {
-  /** @returns {boolean} false solo si el navegador reporta que no hay red. */
-  estaOnline() {
-    return typeof navigator === 'undefined' || navigator.onLine !== false;
-  }
+  async buscarCoordenadas(ciudad) {
+    const nombre = typeof ciudad === 'string' ? ciudad.trim() : '';
 
-  obtenerCondicionWmo(codigo) {
-    return WMO[codigo] ?? WMO_DESCONOCIDO;
-  }
-
-  async _obtenerJson(url) {
-    if (!this.estaOnline()) {
-      throw new WeatherError('OFFLINE', MENSAJES.OFFLINE);
+    if (!nombre) {
+      throw new Error('Por favor, ingresa el nombre de una ciudad.');
     }
-
-    const controlador = new AbortController();
-    const temporizador = setTimeout(() => controlador.abort(), TIMEOUT_MS);
 
     try {
-      const respuesta = await fetch(url, { signal: controlador.signal });
+      // 1. El mensajero (fetch) va a buscar la ciudad. Usamos await para esperarlo.
+      const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(nombre)}&count=1&language=es&format=json`;
+
+      let respuesta;
+
+      try {
+        respuesta = await fetch(url);
+      } catch (error) {
+        throw new Error('Sin conexión a internet. Verifica tu red.');
+      }
+
+      // 2. Validamos si la comunicación con el servidor fue exitosa
       if (!respuesta.ok) {
-        throw new WeatherError('API', MENSAJES.API);
+        throw new Error('Error al conectar con el servicio de coordenadas');
       }
-      return await respuesta.json();
+
+      // 3. Abrimos el paquete que trajo el mensajero y lo convertimos a un objeto JavaScript
+      const datos = await respuesta.json();
+
+      // 4. Control de ciudad no encontrada (Cumpliendo el Criterio de Aceptación)
+      if (!datos.results || datos.results.length === 0) {
+        throw new Error(`No se encontró la ciudad: "${nombre}". Verifica la ortografía.`);
+      }
+
+      // 5. Extraemos el primer resultado de la lista
+      const ubicacion = datos.results[0];
+
+      // Retornamos solo lo que nos importa
+      return {
+        lat: ubicacion.latitude,
+        lon: ubicacion.longitude,
+        nombre: ubicacion.name,
+        pais: ubicacion.country,
+      };
     } catch (error) {
-      if (error instanceof WeatherError) throw error;
-      if (error.name === 'AbortError') {
-        throw new WeatherError('TIMEOUT', MENSAJES.TIMEOUT);
-      }
-      if (error instanceof TypeError) {
-        throw new WeatherError('OFFLINE', MENSAJES.OFFLINE);
-      }
-      // JSON inválido u otro fallo de la respuesta
-      throw new WeatherError('API', MENSAJES.API);
-    } finally {
-      clearTimeout(temporizador);
+      // Si algo falla, el catch atrapa el error para que la página no se congele
+      console.error('Error en buscarCoordenadas:', error);
+      throw error; // Lanzamos el error hacia arriba para que el Jefe de operaciones se entere
     }
   }
 
-  async buscarCoordenadas(ciudad) {
-    const url = `${URL_GEOCODING}?name=${encodeURIComponent(ciudad)}&count=1&language=es&format=json`;
-    const datos = await this._obtenerJson(url);
+  async obtenerClima(lat, lon) {
+    try {
+      // 1. Armamos la dirección exacta con las coordenadas y los datos específicos que pide tu tarea
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&timezone=auto`;
 
-    if (!Array.isArray(datos.results) || datos.results.length === 0) {
-      throw new WeatherError('NOT_FOUND', MENSAJES.noEncontrada(ciudad));
+      // 2. Despachamos al mensajero y ponemos el freno de mano (await)
+      const respuesta = await fetch(url);
+
+      // 3. Revisamos si el servidor del clima nos atendió bien
+      if (!respuesta.ok) {
+        throw new Error('Error al obtener los datos meteorológicos');
+      }
+
+      // 4. Abrimos el paquete (usando el método .json()) y esperamos a que se convierta
+      const datos = await respuesta.json();
+
+      // 5. Extraemos el bloque del clima actual (es una propiedad que Open-Meteo llama 'current')
+      const climaActual = datos.current;
+
+      // 6. ¡AQUÍ USAMOS EL MODELO! Traducimos el código WMO a condición e ícono oficial
+      const infoWmo = Clima.mapearWMO(climaActual.weather_code);
+
+      // 7. Empacamos solo lo que nos sirve en un objeto limpio y lo retornamos
+      return {
+        temperatura: climaActual.temperature_2m,
+        sensacionTermica: climaActual.apparent_temperature,
+        humedad: climaActual.relative_humidity_2m,
+        viento: climaActual.wind_speed_10m,
+        condicion: infoWmo.condicion,
+        icono: infoWmo.icono,
+        codigoWmo: climaActual.weather_code,
+      };
+    } catch (error) {
+      console.error('Error en obtenerClima:', error);
+      throw error;
     }
-
-    const lugar = datos.results[0];
-    return {
-      nombre: lugar.name,
-      pais: lugar.country ?? '',
-      latitud: lugar.latitude,
-      longitud: lugar.longitude,
-    };
-  }
-
-  async obtenerPronostico(lat, lon) {
-    const campos = [
-      'temperature_2m',
-      'relative_humidity_2m',
-      'apparent_temperature',
-      'weather_code',
-      'wind_speed_10m',
-    ].join(',');
-    const url = `${URL_FORECAST}?latitude=${lat}&longitude=${lon}&current=${campos}&timezone=auto`;
-    const datos = await this._obtenerJson(url);
-
-    if (!datos.current) {
-      throw new WeatherError('API', MENSAJES.API);
-    }
-    return datos.current;
   }
 
   async consultarClima(ciudad) {
-    const lugar = await this.buscarCoordenadas(ciudad);
-    const actual = await this.obtenerPronostico(lugar.latitud, lugar.longitud);
-    const { condicion, icono } = this.obtenerCondicionWmo(actual.weather_code);
+    try {
+      // 1. El jefe le ordena al primer método que busque las coordenadas y lo espera (await)
+      const ubicacion = await this.buscarCoordenadas(ciudad);
 
-    return new Clima({
-      ciudad: lugar.nombre,
-      pais: lugar.pais,
-      temperatura: actual.temperature_2m,
-      sensacionTermica: actual.apparent_temperature,
-      humedad: actual.relative_humidity_2m,
-      viento: actual.wind_speed_10m,
-      condicion,
-      icono,
-      codigoWmo: actual.weather_code,
-      fechaHora: new Date(),
-    });
+      // 2. Con las coordenadas en mano, el jefe le ordena al segundo método traer el clima y lo espera
+      const datosClima = await this.obtenerClima(ubicacion.lat, ubicacion.lon);
+
+      // 3. El jefe junta la información de ambos métodos y crea una instancia oficial de tu clase Clima
+      return new Clima({
+        ciudad: ubicacion.nombre,
+        pais: ubicacion.pais,
+        temperatura: datosClima.temperatura,
+        sensacionTermica: datosClima.sensacionTermica,
+        humedad: datosClima.humedad,
+        viento: datosClima.viento,
+        condicion: datosClima.condicion,
+        icono: datosClima.icono,
+        codigoWmo: datosClima.codigoWmo,
+      });
+    } catch (error) {
+      // Si cualquiera de los dos métodos falla (ej. la ciudad no existe), el error sube hasta aquí
+      console.error('Error en consultarClima:', error);
+      throw error; // Se lanza por última vez para que app.js lo muestre en la pantalla
+    }
   }
 }
