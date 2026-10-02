@@ -57,8 +57,8 @@ export class WeatherService {
 
   async obtenerClima(lat, lon) {
     try {
-      // 1. Armamos la dirección exacta con las coordenadas y los datos específicos que pide tu tarea
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&timezone=auto`;
+      // 1. Armamos la dirección exacta con las coordenadas y datos meteorológicos (incluyendo is_day para ciclo día/noche)
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,is_day&timezone=auto`;
 
       // 2. Despachamos al mensajero y ponemos el freno de mano (await)
       const respuesta = await fetch(url);
@@ -74,8 +74,9 @@ export class WeatherService {
       // 5. Extraemos el bloque del clima actual (es una propiedad que Open-Meteo llama 'current')
       const climaActual = datos.current;
 
-      // 6. ¡AQUÍ USAMOS EL MODELO! Traducimos el código WMO a condición e ícono oficial
-      const infoWmo = Clima.mapearWMO(climaActual.weather_code);
+      // 6. ¡AQUÍ USAMOS EL MODELO! Traducimos el código WMO a condición e ícono oficial (diurno o nocturno)
+      const esDia = climaActual.is_day !== 0;
+      const infoWmo = Clima.mapearWMO(climaActual.weather_code, esDia);
 
       // 7. Empacamos solo lo que nos sirve en un objeto limpio y lo retornamos
       return {
@@ -86,6 +87,7 @@ export class WeatherService {
         condicion: infoWmo.condicion,
         icono: infoWmo.icono,
         codigoWmo: climaActual.weather_code,
+        esDia,
       };
     } catch (error) {
       console.error('Error en obtenerClima:', error);
@@ -112,6 +114,7 @@ export class WeatherService {
         condicion: datosClima.condicion,
         icono: datosClima.icono,
         codigoWmo: datosClima.codigoWmo,
+        esDia: datosClima.esDia,
       });
     } catch (error) {
       // Si cualquiera de los dos métodos falla (ej. la ciudad no existe), el error sube hasta aquí

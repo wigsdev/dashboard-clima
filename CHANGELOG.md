@@ -7,15 +7,40 @@ y este proyecto adhiere a [Semantic Versioning 2.0.0](https://semver.org/lang/es
 
 ---
 
-## [Unreleased] — v1.0.0 (MVP Funcional)
+## [1.0.0] — 2026-10-01 (Versión Final — Proyecto Integrador G4)
 
-### En desarrollo / Próximos pasos
-- Maquetación semántica HTML5 e infraestructura de IDs oficiales (T-02).
-- Sistema de estilos CSS moderno, tokens semánticos y rejilla responsiva (T-03).
-- Modelado de dominio POO con las clases `Clima` e `Historial` (T-04, T-05).
-- Integración asíncrona con la API de Open-Meteo mediante async/await (T-06).
-- Manipulación segura del DOM y orquestación de eventos (T-07 a T-11).
-- Selector de unidades (°C / °F) y entrega final del MVP con capturas reales (T-12, T-13).
+### Añadido
+- **Maquetación y Accesibilidad (T-02)**:
+  - Estructura semántica HTML5 con roles WAI-ARIA, `aria-live="polite"` y landmarks accesibles.
+  - Formulario de búsqueda accesible con soporte nativo de teclado (`Enter`).
+- **Sistema de Estilos y Responsive Design (T-03, T-12)**:
+  - Tokens semánticos CSS (:root) con paleta moderna, modo claro y sombras suaves.
+  - Rejilla responsiva con CSS Grid y Flexbox adaptada para Desktop, Tablet y Mobile.
+  - Modificadores contextuales de clima: `card--warm` (cálido) y `card--cold` (frío).
+  - Microinteracciones, transiciones fluidas y estados visuales hover/active.
+- **Modelos de Dominio POO (T-04, T-05)**:
+  - Clase `Clima` con encapsulamiento, mapeo de códigos WMO, cálculo de Fahrenheit y formateo.
+  - Clase `Historial` con almacenamiento en memoria, deduplicación normalizada y límite de 5 elementos.
+- **Servicios Asíncronos (T-06)**:
+  - `WeatherService` con consumo asíncrono no bloqueante vía Fetch API de Open-Meteo Geocoding y Forecast.
+  - Manejo integral de errores de red, respuestas HTTP no satisfactorias y ciudades no encontradas.
+- **Capa de Presentación y DOM (T-07)**:
+  - `DomRenderer` desacoplado para renderizado seguro sin datos estáticos en HTML.
+  - Creación dinámica de tarjetas principales, métricas secundarias y chips de historial.
+- **Gestión de Errores y Experiencia de Usuario (T-08, T-10)**:
+  - Indicadores de carga accesibles (`loading` skeleton con spinner).
+  - Mensajes de error claros e informativos para búsquedas fallidas y entradas vacías.
+  - Detección de conectividad en tiempo real (`online` / `offline`) con banner de aviso.
+- **Persistencia Local (T-11)**:
+  - Sincronización transparente de búsquedas recientes con `localStorage`.
+  - Botón para limpiar historial completo y actualización reactiva de la interfaz.
+- **Selector de Unidades (T-12)**:
+  - Switch interactivo pill-toggle (°C / °F) con re-renderizado instantáneo de la temperatura y sensación térmica.
+- **Documentación y Diapositivas Finales (T-13)**:
+  - Actualización completa de `README.md` con enlace a GitHub Pages, capturas de pantalla y sustentación de los 5 pilares.
+  - Presentación web interactiva `docs/diapositivas-presentacion.html` con 23 diapositivas y visor de código.
+  - Guion formal en `docs/diapositivas-presentacion.md` para la sustentación del Grupo G4.
+  - Registro de capturas en `docs/screenshots/` para resoluciones Desktop, Tablet y Móvil.
 
 ---
 
@@ -27,12 +52,12 @@ y este proyecto adhiere a [Semantic Versioning 2.0.0](https://semver.org/lang/es
   - Archivo `.gitignore` con exclusión estándar de dependencias, ficheros de sistema y la carpeta `scripts/`.
   - Archivo `package.json` con metadatos del proyecto y scripts de ejecución.
   - Licencia oficial MIT en `LICENSE` a nombre de `wigsdev`.
-  - Presentación completa y profesional en `README.md` con badges oficiales y guía de instalación.
-- **Suite Documental de Estándar Profesional**:
-  - `docs/guia-desarrollo.md`: Manual técnico con 17 secciones, mapa completo de IDs, clases CSS, esquema visual ASCII, tabla WMO y respuestas preparadas para la sustentación.
-  - `docs/backlog.md`: Product Backlog estructurado con 13 tareas atómicas, mapa de dependencias, fases de ejecución y resumen cuantitativo.
-  - `docs/workflow.md`: Guía de Git Flow simplificado, especificación de Conventional Commits con ejemplos correctos/incorrectos, plantilla obligatoria de Pull Request y Code Review Checklist.
-  - `docs/diseno.md`: Propuesta de diseño UI/UX con CSS moderno (`clamp()`, sintaxis de rango `@media (width > ...em)`) y wireframes en ASCII para desktop, tablet y móvil.
-  - `docs/plan-implementacion.md`: Propuesta técnica y de arquitectura integral.
+  - Presentación inicial en `README.md`.
+- **Suite Documental**:
+  - `docs/guia-desarrollo.md`: Manual técnico con 17 secciones y mapa de IDs.
+  - `docs/backlog.md`: Product Backlog estructurado con 13 tareas atómicas.
+  - `docs/workflow.md`: Guía de Git Flow y Conventional Commits.
+  - `docs/diseno.md`: Propuesta de diseño UI/UX y wireframes.
+  - `docs/plan-implementacion.md`: Plan técnico y arquitectura.
 - **Automatización**:
-  - Script bash `scripts/crear-issues.sh` para la creación desatendida de labels y de las 13 GitHub Issues del proyecto con GitHub CLI (`gh`).
+  - Script bash `scripts/crear-issues.sh` para la creación desatendida de GitHub Issues.

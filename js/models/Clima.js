@@ -31,6 +31,7 @@ export class Clima {
     condicion,
     icono,
     codigoWmo = 0,
+    esDia = true,
     fechaHora = new Date(),
   } = {}) {
     this.ciudad = ciudad;
@@ -42,6 +43,7 @@ export class Clima {
     this.condicion = condicion;
     this.icono = icono;
     this.codigoWmo = codigoWmo;
+    this.esDia = Boolean(esDia);
     this.fechaHora = fechaHora;
   }
 
@@ -83,12 +85,20 @@ export class Clima {
     );
   }
 
-  // Mapea el código numérico de la API a su descripción en español e icono SVG
-  static mapearWMO(codigo) {
+  // Mapea el código numérico de la API a su descripción en español e icono SVG (diurno o nocturno)
+  static mapearWMO(codigo, esDia = true) {
+    const iconoDespejado = esDia
+      ? 'assets/icons/weather/clear-day.svg'
+      : 'assets/icons/weather/clear-night.svg';
+
+    const iconoParcial = esDia
+      ? 'assets/icons/weather/partly-cloudy.svg'
+      : 'assets/icons/weather/partly-cloudy-night.svg';
+
     const mapa = {
-      0: { condicion: 'Cielo despejado', icono: 'assets/icons/weather/clear-day.svg' },
-      1: { condicion: 'Mayormente despejado', icono: 'assets/icons/weather/clear-day.svg' },
-      2: { condicion: 'Parcialmente nublado', icono: 'assets/icons/weather/partly-cloudy.svg' },
+      0: { condicion: 'Cielo despejado', icono: iconoDespejado },
+      1: { condicion: 'Mayormente despejado', icono: iconoDespejado },
+      2: { condicion: 'Parcialmente nublado', icono: iconoParcial },
       3: { condicion: 'Nublado', icono: 'assets/icons/weather/cloudy.svg' },
       45: { condicion: 'Niebla', icono: 'assets/icons/weather/fog.svg' },
       48: { condicion: 'Niebla con escarcha', icono: 'assets/icons/weather/fog.svg' },
@@ -113,7 +123,7 @@ export class Clima {
     return (
       mapa[codigo] || {
         condicion: 'Condición variable',
-        icono: 'assets/icons/weather/partly-cloudy.svg',
+        icono: iconoParcial,
       }
     );
   }

@@ -1,6 +1,6 @@
 {
   "name": "dashboard-clima",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Weather Dashboard — Aplicación web interactiva para consulta meteorológica con POO, Promesas, async/await y JavaScript Vanilla.",
   "main": "index.html",
   "scripts": {

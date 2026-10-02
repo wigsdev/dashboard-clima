@@ -35,7 +35,14 @@ export class App {
       this.cambiarUnidad(nuevaUnidad);
     });
 
-    const ciudadInicial = ciudades.length > 0 ? ciudades[0] : 'Lima';
+    // 2.1 Carga la última ciudad consultada o Cajamarca por defecto
+    const ciudadInicial = ciudades.length > 0 ? ciudades[0] : 'Cajamarca';
+
+    // 2.2. Sincroniza el campo de texto para que coincida con la tarjeta
+    if (this.ui.searchInput) {
+      this.ui.searchInput.value = ciudadInicial;
+    }
+    // 2.3 Realiza la búsqueda inicial
     this.buscar(ciudadInicial);
   }
 
