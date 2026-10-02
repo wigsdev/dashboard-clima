@@ -1,6 +1,6 @@
 export class Historial {
-  constructor(limite = 8) {
-    // Si el limite no me da ningun valor numerico usamos el 8 como valor por defecto
+  constructor(limite = 5) {
+    // Si el limite no me da ningun valor numerico usamos el 5 como valor por defecto
     this._ciudades = [];
     this._limite = limite;
     // Nombre de la llave que usaremos más adelante para guardar los datos en la memoria del navegador (localStorage)
