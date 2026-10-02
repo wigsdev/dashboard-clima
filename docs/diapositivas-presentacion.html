@@ -1,0 +1,3722 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weather Dashboard — Consulta Meteorológica en Tiempo Real — Proyecto G4</title>
+
+  <!-- Google Fonts: Lora (Títulos) + JetBrains Mono (Código) + Inter (Cuerpo) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&family=Lora:ital,wght@0,600;0,700;1,400&display=swap"
+    rel="stylesheet">
+
+  <style>
+    /* ── Reset & Base Layout (100% Viewport Width & Height) ── */
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      /* ── Paleta Meteorológica Oficial (5 Tonos en Modo Oscuro) ── */
+      --color-gold: #fbbf24;        /* 1. Dorado (Sol / Acentos cálidos) */
+      --color-gold-warm: #f59e0b;
+      --color-celeste: #38bdf8;     /* 2. Celeste (Cielo / Primario aire) */
+      --color-blue-deep: #0284c7;   /* 3. Azul (Profundidad / Peticiones) */
+      --color-blue-night: #090d16;  /*    Azul Noche (Fondo base) */
+      --color-blue-card: #0f172a;
+      --color-slate-border: #334155;/* 4. Plomo (Superficies neutras / Bordes) */
+      --color-slate-card: #1e293b;
+      --color-white: #f8fafc;       /* 5. Blanco (Luz / Nieve / Texto) */
+      --text-muted: #94a3b8;
+
+      /* Tokens semánticos vinculados */
+      --bg-dark: var(--color-blue-night);
+      --bg-slide: var(--color-blue-card);
+      --bg-card: #060911;
+      --text-main: var(--color-white);
+      --border-color: var(--color-slate-border);
+      --accent-orange: var(--color-gold-warm);
+      --accent-cyan: var(--color-celeste);
+      --accent-emerald: #10b981;
+      --accent-sky: var(--color-blue-deep);
+
+      --font-title: 'Lora', Georgia, serif;
+      --font-body: 'Inter', system-ui, sans-serif;
+      --font-code: 'JetBrains Mono', monospace;
+    }
+
+    html,
+    body {
+      width: 100vw;
+      height: 100vh;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      font-family: var(--font-body);
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+    }
+
+    /* ── Contenedor al 100% del tamaño de Pantalla ── */
+    .deck-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: var(--bg-dark);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Cabecera Superior Fluida ── */
+    .deck-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: clamp(0.7rem, 1.6vh, 1.2rem) clamp(1.5rem, 3vw, 3.5rem);
+      border-bottom: 1px solid var(--border-color);
+      background-color: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(10px);
+      flex-shrink: 0;
+    }
+
+    .brand-title {
+      font-family: var(--font-title);
+      font-size: clamp(1.3rem, 2.6vh, 1.6rem);
+      color: var(--accent-cyan);
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+    }
+
+    .badge-req {
+      background-color: rgba(56, 189, 248, 0.15);
+      color: var(--accent-cyan);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      padding: clamp(0.3rem, 0.7vh, 0.5rem) clamp(0.9rem, 1.6vw, 1.3rem);
+      border-radius: 9999px;
+      font-size: clamp(0.85rem, 1.8vh, 1rem);
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    /* ── Área Principal de Diapositiva ── */
+    .slide-viewport {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      width: 100%;
+      height: 100%;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      padding: clamp(1.4rem, 2.8vh, 2.4rem) clamp(1.5rem, 3vw, 3.5rem);
+      display: none;
+      opacity: 0;
+      transition: opacity 0.25s ease-in-out;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .slide.active {
+      display: flex;
+      flex-direction: column;
+      opacity: 1;
+    }
+
+    .slide-title {
+      font-family: var(--font-title);
+      font-size: clamp(1.9rem, 3.6vh, 2.5rem);
+      margin-bottom: clamp(0.85rem, 2vh, 1.6rem);
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-shrink: 0;
+    }
+
+    .slide-req {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-family: var(--font-code);
+      font-size: clamp(0.72rem, 1.4vh, 0.85rem);
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: 6px;
+      padding: 0.2rem 0.6rem;
+      margin-bottom: clamp(0.3rem, 0.8vh, 0.6rem);
+      width: fit-content;
+      flex-shrink: 0;
+    }
+
+    /* ── Layout Dividido 40/60 Fluido ── */
+    .split-grid {
+      display: grid;
+      grid-template-columns: 42% 58%;
+      gap: clamp(1rem, 2vw, 2.5rem);
+      flex: 1;
+      align-items: stretch;
+      min-height: 0;
+    }
+
+    .split-grid-50 {
+      grid-template-columns: 50% 50%;
+    }
+
+    /* ── Columna Izquierda (Texto y Tarjetas) ── */
+    .info-card {
+      background-color: rgba(15, 23, 42, 0.7);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: clamp(1.2rem, 2.6vh, 2rem);
+      display: flex;
+      flex-direction: column;
+      gap: clamp(0.75rem, 1.6vh, 1.2rem);
+      justify-content: flex-start;
+      overflow-y: auto;
+    }
+
+    .info-card::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    .info-card::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+      border-radius: 4px;
+    }
+
+    .info-card::-webkit-scrollbar-thumb {
+      background: var(--accent-cyan);
+      border-radius: 4px;
+    }
+
+    .info-card h3 {
+      font-size: clamp(1.25rem, 2.4vh, 1.5rem);
+      color: var(--accent-cyan);
+      font-weight: 600;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: clamp(0.4rem, 0.9vh, 0.8rem);
+      flex-shrink: 0;
+    }
+
+    .bullet-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      gap: clamp(0.65rem, 1.5vh, 1.1rem);
+      font-size: clamp(1.05rem, 2.1vh, 1.25rem);
+      line-height: 1.55;
+      color: #cbd5e1;
+    }
+
+    .bullet-list li {
+      position: relative;
+      padding-left: clamp(1.4rem, 1.8vw, 1.8rem);
+    }
+
+    .bullet-list li::before {
+      content: "▹";
+      position: absolute;
+      left: 0;
+      color: var(--accent-cyan);
+      font-weight: bold;
+      font-size: clamp(1rem, 2vh, 1.3rem);
+    }
+
+    .bullet-list strong {
+      color: var(--text-main);
+    }
+
+    .info-card code,
+    .bullet-list code {
+      font-family: var(--font-code);
+      font-size: 0.95em;
+      font-weight: 700;
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      padding: 0.1rem 0.35rem;
+      border-radius: 4px;
+      letter-spacing: 0.02em;
+    }
+
+    /* ── Columna Derecha (Bloque de Código) ── */
+    /* ── Tema One Dark Pro Night Flat (Antigravity IDE) ── */
+    .code-card {
+      background-color: var(--bg-card); /* #060911 - Fondo oscuro oficial */
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: clamp(1rem, 2.2vh, 1.6rem);
+      display: flex;
+      flex-direction: column;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+      overflow: hidden;
+    }
+
+    .code-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--font-code);
+      font-size: clamp(0.85rem, 1.8vh, 1rem);
+      color: var(--text-muted);
+      margin-bottom: clamp(0.5rem, 1.2vh, 1.2rem);
+      padding-bottom: clamp(0.4rem, 1vh, 0.75rem);
+      border-bottom: 1px solid #1e293b;
+      flex-shrink: 0;
+    }
+
+    .code-header-left {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .code-dots {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .dot-red { background-color: #ef4444; }
+    .dot-yellow { background-color: #f59e0b; }
+    .dot-green { background-color: #10b981; }
+
+    pre {
+      font-family: var(--font-code);
+      font-size: clamp(0.88rem, 1.8vh, 1.05rem);
+      line-height: 1.55;
+      color: #e2e8f0;
+      overflow: auto;
+      white-space: pre;
+      word-break: normal;
+      flex: 1;
+      display: block;
+    }
+
+    pre code {
+      font-family: inherit;
+      font-size: inherit;
+      line-height: inherit;
+      white-space: pre;
+      word-break: normal;
+      color: #e2e8f0;
+    }
+
+    pre::-webkit-scrollbar,
+    .code-modal-body::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    pre::-webkit-scrollbar-track,
+    .code-modal-body::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+      border-radius: 4px;
+    }
+
+    pre::-webkit-scrollbar-thumb,
+    .code-modal-body::-webkit-scrollbar-thumb {
+      background: var(--accent-cyan);
+      border-radius: 4px;
+    }
+
+    pre::-webkit-scrollbar-thumb:hover,
+    .code-modal-body::-webkit-scrollbar-thumb:hover {
+      background: #0284c7;
+    }
+
+    /* Botón Ampliar Código Completo */
+    .btn-expand-code {
+      background: rgba(56, 189, 248, 0.1);
+      color: var(--accent-cyan);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      padding: 0.25rem 0.7rem;
+      border-radius: 6px;
+      font-family: var(--font-body);
+      font-size: clamp(0.75rem, 1.5vh, 0.85rem);
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.2s ease;
+    }
+
+    .btn-expand-code:hover {
+      background: var(--accent-cyan);
+      color: #090d16;
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 14px rgba(56, 189, 248, 0.4);
+    }
+
+    /* ── Portada y Diapositivas Especiales ── */
+    .cover-layout {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      text-align: center;
+      gap: clamp(1.2rem, 2.5vh, 2rem);
+    }
+
+    .cover-title {
+      font-family: var(--font-title);
+      font-size: clamp(2.4rem, 5.5vh, 3.6rem);
+      color: var(--text-main);
+      font-weight: 700;
+      line-height: 1.15;
+    }
+
+    .cover-subtitle {
+      font-size: clamp(1.2rem, 2.6vh, 1.6rem);
+      color: var(--accent-cyan);
+      font-weight: 500;
+    }
+
+    .team-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(280px, 1fr));
+      gap: clamp(0.75rem, 1.5vh, 1.25rem);
+      width: 100%;
+      max-width: 860px;
+      margin-top: 1rem;
+    }
+
+    .team-card {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: clamp(0.6rem, 1.4vh, 1rem) 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: clamp(0.85rem, 1.8vh, 1rem);
+      color: var(--text-main);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+    }
+
+    .team-card:last-child:nth-child(odd) {
+      grid-column: 1 / -1;
+      max-width: 450px;
+      justify-self: center;
+      width: 100%;
+    }
+
+    /* ── Modal Flotante de Código Completo ── */
+    .code-modal-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background-color: rgba(5, 9, 18, 0.88);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: clamp(1rem, 3vh, 2.5rem);
+      opacity: 1;
+      visibility: visible;
+      transition: opacity 0.2s ease, visibility 0.2s ease;
+    }
+
+    .code-modal-overlay.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .code-modal-window {
+      width: 92vw;
+      max-width: 1200px;
+      height: 86vh;
+      background-color: #060911;
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(56, 189, 248, 0.25);
+      overflow: hidden;
+      animation: modalZoomIn 0.2s ease-out;
+    }
+
+    @keyframes modalZoomIn {
+      from { transform: scale(0.96); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .code-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.85rem 1.5rem;
+      background-color: rgba(15, 23, 42, 0.95);
+      border-bottom: 1px solid var(--border-color);
+      flex-shrink: 0;
+    }
+
+    .code-modal-title-group {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+    }
+
+    .code-modal-filename {
+      font-family: var(--font-code);
+      font-size: clamp(0.95rem, 2vh, 1.15rem);
+      font-weight: 700;
+      color: var(--accent-cyan);
+    }
+
+    .code-modal-badge {
+      font-size: 0.75rem;
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--accent-emerald);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      padding: 0.15rem 0.55rem;
+      border-radius: 9999px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .code-modal-close {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      padding: 0.35rem 0.85rem;
+      border-radius: 8px;
+      font-family: var(--font-body);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .code-modal-close:hover {
+      background: #ef4444;
+      color: #ffffff;
+      border-color: #ef4444;
+    }
+
+    .code-modal-body {
+      flex: 1;
+      overflow: auto;
+      padding: 1rem 0;
+      background-color: #060911;
+      font-family: var(--font-code);
+      font-size: clamp(0.85rem, 1.7vh, 0.95rem);
+      line-height: 1.55;
+      tab-size: 2;
+      color: #e2e8f0;
+    }
+
+    .editor-code-container {
+      display: flex;
+      flex-direction: column;
+      min-width: 100%;
+      width: max-content;
+    }
+
+    .editor-line {
+      display: flex;
+      align-items: baseline;
+      min-height: 1.55em;
+      padding-right: 2rem;
+      transition: background-color 0.1s ease;
+    }
+
+    .editor-line:hover {
+      background-color: rgba(56, 189, 248, 0.04);
+    }
+
+    .line-num {
+      width: 3.8rem;
+      min-width: 3.8rem;
+      padding-right: 1.25rem;
+      text-align: right;
+      color: #475569;
+      user-select: none;
+      -webkit-user-select: none;
+      font-size: 0.88em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .line-code {
+      flex: 1;
+      white-space: pre;
+      color: #e2e8f0;
+    }
+
+    .code-modal-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.6rem 1.5rem;
+      background-color: rgba(15, 23, 42, 0.95);
+      border-top: 1px solid var(--border-color);
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    /* ── Colores de Sintaxis One Dark Pro / Antigravity Armonizados ── */
+    .token.comment,
+    .token.prolog,
+    .token.doctype,
+    .token.cdata {
+      color: #64748b !important;
+      font-style: italic;
+    }
+
+    .token.punctuation {
+      color: #94a3b8 !important;
+    }
+
+    .token.keyword,
+    .token.tag:not(span) {
+      color: #c678dd !important; /* Púrpura One Dark */
+      font-weight: 600;
+    }
+
+    .token.keyword-this,
+    .token.property,
+    .token.variable,
+    .token.parameter {
+      color: #e06c75 !important; /* Coral */
+    }
+
+    .token.class-name,
+    .token.selector {
+      color: #e5c07b !important; /* Amarillo Oro */
+    }
+
+    .token.function,
+    .token.function-name {
+      color: #61afef !important; /* Azul */
+    }
+
+    .token.string,
+    .token.attr-value {
+      color: #98c379 !important; /* Verde */
+    }
+
+    .token.number,
+    .token.boolean,
+    .token.constant,
+    .token.attr-name {
+      color: #d19a66 !important; /* Naranja */
+    }
+
+    .token.operator {
+      color: #56b6c2 !important; /* Cian */
+    }
+
+    .color-swatch {
+      display: inline-block;
+      width: 0.78em;
+      height: 0.78em;
+      margin-right: 0.35em;
+      vertical-align: -0.1em;
+      border-radius: 2px;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+    }
+
+    /* ── Colores de Sintaxis para Fragmentos de Código en Diapositivas ── */
+    .kw { color: #f472b6 !important; font-weight: 600; }
+    .fn { color: #38bdf8 !important; font-weight: 600; }
+    .str { color: #34d399 !important; }
+    .num { color: #fbbf24 !important; }
+    .cm { color: #64748b !important; font-style: italic; }
+    .op { color: #fb7185 !important; }
+    .tag { color: #f472b6 !important; }
+    .attr { color: #fbbf24 !important; }
+
+    /* ── Tabla de Rúbrica de la Diapositiva 23 ── */
+    .rubric-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: clamp(0.78rem, 1.5vh, 0.92rem);
+      color: #cbd5e1;
+    }
+
+    .rubric-table th {
+      text-align: left;
+      padding: clamp(0.35rem, 0.7vh, 0.6rem) 0.6rem;
+      background: rgba(30, 41, 59, 0.9);
+      color: var(--accent-cyan);
+      border-bottom: 2px solid var(--border-color);
+      font-weight: 700;
+    }
+
+    .rubric-table td {
+      padding: clamp(0.3rem, 0.6vh, 0.55rem) 0.6rem;
+      border-bottom: 1px solid rgba(51, 65, 85, 0.4);
+    }
+
+    .rubric-table tr:hover td {
+      background: rgba(56, 189, 248, 0.05);
+    }
+
+    .status-pill {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 9999px;
+      font-weight: 600;
+      font-size: 0.75rem;
+    }
+
+    .status-ok {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    /* ── Botón y Enlace a la Demostración en Vivo (Diapositiva 23) ── */
+    .demo-box {
+      margin-top: auto;
+      padding: clamp(0.75rem, 1.6vh, 1.2rem);
+      background: rgba(2, 132, 199, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.45rem;
+      text-align: center;
+    }
+
+    .btn-launch-demo {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: linear-gradient(135deg, var(--color-blue-deep) 0%, var(--color-celeste) 100%);
+      color: #04101c !important;
+      font-family: var(--font-body);
+      font-size: clamp(1rem, 2.1vh, 1.25rem);
+      font-weight: 700;
+      padding: clamp(0.6rem, 1.3vh, 0.9rem) clamp(1.4rem, 2.2vw, 2rem);
+      border-radius: 10px;
+      text-decoration: none;
+      box-shadow: 0 4px 15px rgba(56, 189, 248, 0.35);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .btn-launch-demo:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(56, 189, 248, 0.55);
+    }
+
+    .btn-demo-icon {
+      font-size: 1.25em;
+    }
+
+    .btn-demo-arrow {
+      font-size: 1.15em;
+      transition: transform 0.2s ease;
+    }
+
+    .btn-launch-demo:hover .btn-demo-arrow {
+      transform: translate(2px, -2px);
+    }
+
+    .demo-note {
+      font-size: clamp(0.75rem, 1.5vh, 0.88rem);
+      color: var(--text-muted);
+    }
+
+    .closing-banner {
+      text-align: center;
+      color: var(--color-gold);
+      font-weight: 700;
+      font-size: clamp(0.95rem, 1.9vh, 1.15rem);
+      padding-top: 0.4rem;
+    }
+
+    /* ── Pie de navegación Fluido ── */
+    .deck-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: clamp(0.6rem, 1.4vh, 1.1rem) clamp(1.5rem, 3vw, 3.5rem);
+      border-top: 1px solid var(--border-color);
+      background-color: rgba(15, 23, 42, 0.95);
+      flex-shrink: 0;
+    }
+
+    .nav-btn {
+      background-color: rgba(51, 65, 85, 0.8);
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+      padding: clamp(0.4rem, 1vh, 0.65rem) clamp(1rem, 2vw, 1.8rem);
+      border-radius: 8px;
+      font-size: clamp(0.85rem, 1.8vh, 1.05rem);
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.2s, border-color 0.2s;
+    }
+
+    .nav-btn:hover {
+      background-color: var(--accent-sky);
+      border-color: var(--accent-cyan);
+    }
+
+    .counter {
+      font-size: clamp(0.85rem, 1.8vh, 1.15rem);
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    /* Ocultar elementos de impresión en pantalla */
+    .slide-print-header,
+    .slide-print-footer {
+      display: none;
+    }
+
+    /* ── Estilos de Impresión a PDF (Ctrl + P) ── */
+    @media print {
+      @page {
+        size: 16in 9in;
+        margin: 0;
+      }
+
+      html,
+      body {
+        width: 100vw !important;
+        height: auto !important;
+        overflow: visible !important;
+        background-color: #090d16 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      .deck-header,
+      .deck-footer {
+        display: none !important;
+      }
+
+      .deck-container {
+        position: static !important;
+        width: 100vw !important;
+        height: auto !important;
+        background-color: #090d16 !important;
+        display: block !important;
+      }
+
+      .slide-viewport {
+        position: static !important;
+        overflow: visible !important;
+        width: 100vw !important;
+        height: auto !important;
+      }
+
+      .slide {
+        position: static !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        page-break-before: always !important;
+        break-before: page !important;
+        page-break-after: always !important;
+        break-after: page !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        padding: 1.5rem 3.2rem !important;
+        box-sizing: border-box !important;
+      }
+
+      .slide:first-of-type {
+        page-break-before: avoid !important;
+        break-before: avoid !important;
+      }
+
+      .slide-print-header {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        padding-bottom: 0.6rem !important;
+        border-bottom: 1px solid var(--border-color) !important;
+        margin-bottom: 0.8rem !important;
+        flex-shrink: 0 !important;
+      }
+
+      .print-brand {
+        font-family: var(--font-title) !important;
+        font-size: 1.15rem !important;
+        color: var(--accent-cyan) !important;
+        font-weight: 700 !important;
+      }
+
+      .print-badge {
+        background-color: rgba(56, 189, 248, 0.15) !important;
+        color: var(--accent-cyan) !important;
+        border: 1px solid rgba(56, 189, 248, 0.35) !important;
+        padding: 0.25rem 0.9rem !important;
+        border-radius: 9999px !important;
+        font-size: 0.8rem !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.05em !important;
+        text-transform: uppercase !important;
+      }
+
+      .slide-print-footer {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        padding-top: 0.6rem !important;
+        border-top: 1px solid var(--border-color) !important;
+        margin-top: 0.8rem !important;
+        font-size: 0.9rem !important;
+        color: var(--text-muted) !important;
+        font-weight: 600 !important;
+        flex-shrink: 0 !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="deck-container">
+    <!-- Cabecera Superior -->
+    <header class="deck-header">
+      <div class="brand-title">
+        <span>🌤️</span> Weather Dashboard — Consulta Meteorológica
+      </div>
+      <div id="req-badge" class="badge-req">PROYECTO INTEGRADOR G4</div>
+    </header>
+
+    <!-- Diapositivas -->
+        <main class="slide-viewport">
+
+      <!-- DIAPOSITIVA 1: PORTADA -->
+      <section class="slide active">
+        <div class="cover-layout">
+          <div class="slide-req">📋 Requisito Oficial: Sección 1 (Enunciado) &amp; Sección 15 (Presentación)</div>
+          <h1 class="cover-title">Weather Dashboard — Consulta Meteorológica</h1>
+          <p class="cover-subtitle">Presentación del Proyecto Integrador — Grupo G4</p>
+
+          <div class="team-grid">
+            <div class="team-card"><span>👤</span> HUAMÁN AYALA, MIRIAM HORTENCIA</div>
+            <div class="team-card"><span>👤</span> FLORES ENCARNACIÓN, JAVIER</div>
+            <div class="team-card"><span>👤</span> GULCOCHÍA SÁNCHEZ, WILMER</div>
+            <div class="team-card"><span>👤</span> DÁVILA SÁNCHEZ, VÍCTOR DANIEL</div>
+            <div class="team-card"><span>👤</span> CHILE ANDRADE, MARCO ANTONIO</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- DIAPOSITIVA 2: PROPÓSITO Y ENUNCIADO -->
+      <section class="slide">
+        <div class="slide-req">📋 Requisito Oficial: Sección 1 (Enunciado) &amp; Sección 2 (Requisitos Funcionales)</div>
+        <h2 class="slide-title">🎯 Diapositiva 2: Propósito, Problemática y Solución</h2>
+        <div class="split-grid">
+          <div class="info-card">
+            <h3>📋 Necesidad del Proyecto (Sección 1)</h3>
+            <ul class="bullet-list">
+              <li><strong>Consulta Meteorológica:</strong> Necesidad de consultar en tiempo real las condiciones climáticas de cualquier ciudad del mundo.</li>
+              <li><strong>Objetivo Principal:</strong> Desarrollar una Single Page Application (SPA) interactiva con HTML5, CSS3 y JavaScript Vanilla.</li>
+              <li><strong>Consumo Asíncrono:</strong> Conectar con una API meteorológica externa para extraer datos reales de temperatura, humedad, viento y condiciones climáticas.</li>
+              <li><strong>Persistencia de Búsquedas:</strong> Mantener un historial accesible de ciudades consultadas sin requerir bases de datos externas.</li>
+            </ul>
+          </div>
+          <div class="info-card">
+            <h3>💡 Solución Desarrollada</h3>
+            <ul class="bullet-list">
+              <li><strong>Single Page Application (SPA):</strong> Actualización fluida y dinámica de resultados sin recargar la página web.</li>
+              <li><strong>Diseño Mobile First:</strong> Adaptabilidad óptima desde teléfonos móviles hasta monitores de escritorio con CSS nativo.</li>
+              <li><strong>Arquitectura en 5 Capas:</strong> Separación limpia entre Modelos, Servicios, Vista (UI) y Controlador Orquestador.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- DIAPOSITIVA 3: ESTRUCTURA HTML SEMÁNTICA -->
+      <section class="slide">
+        <div class="slide-req">📋 Requisito Oficial: Sección 13 (HTML Semántico) &amp; Sección 6 (Datos No Escritos en HTML)</div>
+        <h2 class="slide-title">🏗️ Diapositiva 3: Maquetación HTML5 Semántica (`index.html`)</h2>
+        <div class="split-grid">
+          <div class="info-card">
+            <h3>💡 Estructura Semántica y Accesibilidad</h3>
+            <ul class="bullet-list">
+              <li><strong>Etiquetas Estándar:</strong> Uso de <code>&lt;header&gt;</code>, <code>&lt;main&gt;</code>, <code>&lt;section&gt;</code>, <code>&lt;form&gt;</code> y <code>&lt;footer&gt;</code> para máxima accesibilidad y SEO.</li>
+              <li><strong>Datos No Quemados:</strong> El HTML se carga completamente limpio de datos estáticos; todo se inyecta dinámicamente mediante JavaScript.</li>
+              <li><strong>Estados Iniciales Ocultos:</strong> Contenedores de carga (<code>#loading-spinner</code>), error (<code>#error-card</code>) y clima (<code>#weather-container</code>) con la clase utilitaria <code>.hidden</code>.</li>
+              <li><strong>Accesibilidad WAI-ARIA:</strong> Atributos <code>aria-live="polite"</code> para alertas y soporte nativo de teclado.</li>
+            </ul>
+          </div>
+          <div class="code-card">
+            <div class="code-header">
+              <div class="code-header-left">
+                <div class="code-dots"><span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span></div>
+                <span>index.html</span>
+              </div>
+              <button class="btn-expand-code" type="button" data-template="code-index" title="Ampliar archivo completo">
+                <span>⛶</span> Ampliar código
+              </button>
+            </div>
+            <pre><code><span class="tag">&lt;header</span> <span class="attr">class</span>=<span class="str">"header"</span><span class="tag">&gt;</span>
+  <span class="tag">&lt;div</span> <span class="attr">class</span>=<span class="str">"header-container container"</span><span class="tag">&gt;</span>
+    <span class="tag">&lt;a</span> <span class="attr">href</span>=<span class="str">"#"</span> <span class="attr">class</span>=<span class="str">"logo"</span><span class="tag">&gt;&lt;span&gt;</span>🌤️<span class="tag">&lt;/span&gt;</span> Weather Dashboard<span class="tag">&lt;/a&gt;</span>
+    <span class="tag">&lt;div</span> <span class="attr">id</span>=<span class="str">"header-actions"</span><span class="tag">&gt;&lt;!--</span> Switch °C / °F <span class="tag">--&gt;&lt;/div&gt;</span>
+  <span class="tag">&lt;/div&gt;</span>
+<span class="tag">&lt;/header&gt;</span>
+
+<span class="tag">&lt;main</span> <span class="attr">class</span>=<span class="str">"main container"</span><span class="tag">&gt;</span>
+  <span class="tag">&lt;form</span> <span class="attr">id</span>=<span class="str">"search-form"</span><span class="tag">&gt;</span>
+    <span class="tag">&lt;input</span> <span class="attr">id</span>=<span class="str">"search-input"</span> <span class="attr">type</span>=<span class="str">"search"</span> <span class="attr">placeholder</span>=<span class="str">"Introduce una ciudad..."</span><span class="tag">&gt;</span>
+    <span class="tag">&lt;button</span> <span class="attr">id</span>=<span class="str">"btn-search"</span> <span class="attr">type</span>=<span class="str">"submit"</span><span class="tag">&gt;</span>Buscar<span class="tag">&lt;/button&gt;</span>
+  <span class="tag">&lt;/form&gt;</span>
+  <span class="tag">&lt;div</span> <span class="attr">id</span>=<span class="str">"loading-spinner"</span> <span class="attr">class</span>=<span class="str">"hidden"</span> <span class="attr">aria-busy</span>=<span class="str">"true"</span><span class="tag">&gt;...&lt;/div&gt;</span>
+  <span class="tag">&lt;div</span> <span class="attr">id</span>=<span class="str">"error-card"</span> <span class="attr">class</span>=<span class="str">"hidden"</span> <span class="attr">role</span>=<span class="str">"alert"</span><span class="tag">&gt;...&lt;/div&gt;</span>
+  <span class="tag">&lt;section</span> <span class="attr">id</span>=<span class="str">"weather-container"</span> <span class="attr">class</span>=<span class="str">"hidden"</span><span class="tag">&gt;...&lt;/section&gt;</span>
+  <span class="tag">&lt;section</span> <span class="attr">id</span>=<span class="str">"history-section"</span><span class="tag">&gt;...&lt;/section&gt;</span>
+<span class="tag">&lt;/main&gt;</span></code></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- DIAPOSITIVA 4: SISTEMA DE DISEÑO CSS -->
+      <section class="slide">
+        <div class="slide-req">📋 Requisito Oficial: Sección 13 (CSS Responsive en Móvil y Escritorio)</div>
+        <h2 class="slide-title">🎨 Diapositiva 4: Sistema de Diseño CSS y Mobile First (`styles.css`)</h2>
+        <div class="split-grid">
+          <div class="info-card">
+            <h3>💡 Metodología de Diseño</h3>
+            <ul class="bullet-list">
+              <li><strong>Variables Centralizadas (<code>:root</code>):</strong> Paleta semántica con azul primario, acentos cálidos y escalas de grises neutras.</li>
+              <li><strong>Tipografía y Espaciado Fluido (<code>clamp()</code>):</strong> Escalado armónico proporcional al visor sin cortes ni saltos bruscos.</li>
+              <li><strong>Mobile First Real:</strong> Estilos base para pantallas móviles; media queries expanden progresivamente hacia tablets y monitores.</li>
+              <li><strong>Media Queries Co-localizadas:</strong> Cada componente agrupa sus estilos responsivos para mantenimiento modular.</li>
+            </ul>
+          </div>
+          <div class="code-card">
+            <div class="code-header">
+              <div class="code-header-left">
+                <div class="code-dots"><span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span></div>
+                <span>css/styles.css</span>
+              </div>
+              <button class="btn-expand-code" type="button" data-template="code-css" title="Ampliar archivo completo">
+                <span>⛶</span> Ampliar código
+              </button>
+            </div>
+            <pre><code><span class="cm">/* Tokens semánticos en :root */</span>
+<span class="kw">:root</span> {
+  <span class="attr">--color-primary</span>: <span class="str">#0284c7</span>;
+  <span class="attr">--color-warm</span>: <span class="str">#f97316</span>;
+  <span class="attr">--color-cold</span>: <span class="str">#38bdf8</span>;
+  <span class="attr">--bg-body</span>: <span class="str">#f0f9ff</span>;
+  <span class="attr">--bg-card</span>: <span class="str">#ffffff</span>;
+  <span class="attr">--font-main</span>: <span class="str">'Plus Jakarta Sans'</span>, system-ui, sans-serif;
+  <span class="attr">--shadow-card</span>: <span class="str">0 4px 20px -2px rgba(2, 132, 199, 0.08)</span>;
+}
+
+<span class="cm">/* Contenedor fluido con clamp() */</span>
+<span class="kw">.container</span> {
+  <span class="attr">width</span>: min(<span class="num">100%</span> - <span class="num">2rem</span>, <span class="num">42rem</span>);
+  <span class="attr">margin-inline</span>: auto;
+}
+
+<span class="cm">/* Expansión progresiva para pantallas grandes */</span>
+<span class="kw">@media</span> (<span class="attr">min-width</span>: <span class="num">640px</span>) {
+  <span class="kw">.metrics-grid</span> {
+    <span class="attr">grid-template-columns</span>: repeat(<span class="num">3</span>, <span class="num">1fr</span>);
+  }
+}</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- DIAPOSITIVA 5: ARQUITECTURA MODULAR Y POO -->
+      <section class="slide">
+        <div class="slide-req">📋 Requisito Oficial: Sección 9 (POO) &amp; Sección 14 (Estructura Modular Sugerida)</div>
+        <h2 class="slide-title">🏛️ Diapositiva 5: Arquitectura Modular y Programación Orientada a Objetos</h2>
+        <div class="split-grid">
+          <div class="info-card">
+            <h3>💡 Separación Limpia de Responsabilidades (5 Capas)</h3>
+            <ul class="bullet-list">
+              <li><strong>Modelos (<code>js/models/</code>):</strong> Representan las entidades de negocio y sus reglas de formato (<code>Clima.js</code>, <code>Historial.js</code>).</li>
+              <li><strong>Servicios (<code>js/services/</code>):</strong> Gestionan la conexión externa y peticiones HTTP asíncronas (<code>WeatherService.js</code>).</li>
+              <li><strong>Vista (<code>js/ui/</code>):</strong> Centraliza la manipulación del DOM y los elementos visuales (<code>DomRenderer.js</code>).</li>
+              <li><strong>Controlador (<code>js/app.js</code>):</strong> Orquesta los eventos del usuario, conecta los modelos y coordina la experiencia.</li>
+            </ul>
+          </div>
+          <div class="code-card">
+            <div class="code-header">
+              <div class="code-header-left">
+                <div class="code-dots"><span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span></div>
+                <span>js/ (Arquitectura Modular)</span>
+              </div>
+              <button class="btn-expand-code" type="button" data-template="code-app" title="Ampliar archivo completo">
+                <span>⛶</span> Ampliar código
+              </button>
+            </div>
+            <pre><code><span class="cm">/* Estructura Modular del Proyecto */</span>
+js/
+├── models/
+│   ├── <span class="fn">Clima.js</span>           → Entidad climática y mapeo WMO (POO)
+│   └── <span class="fn">Historial.js</span>       → Arreglo de ciudades y localStorage
+├── services/
+│   └── <span class="fn">WeatherService.js</span>  → Consumo API Open-Meteo (async/await)
+├── ui/
+│   └── <span class="fn">DomRenderer.js</span>     → Manipulación y renderizado limpio del DOM
+└── <span class="fn">app.js</span>                 → Controlador principal y orquestador</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- DIAPOSITIVA 6: CLASE MODELO CLIMA -->
+      <section class="slide">
+        <div class="slide-req">📋 Requisito Oficial: Sección 9 (POO: Clases, Constructor, Propiedades) &amp; Sección 3 (API)</div>
+        <h2 class="slide-title">🌤️ Diapositiva 6: Clase Modelo `Clima` — Constructor y Encapsulamiento</h2>
+        <div class="split-grid">
+          <div class="info-card">
+            <h3>💡 Encapsulamiento y Normalización</h3>
+            <ul class="bullet-list">
+              <li><strong>¿Por qué una Clase Clima?:</strong> Desacopla la lógica interna del formato crudo de la API, encapsulando datos y comportamientos en una sola entidad.</li>
+              <li><strong>Constructor:</strong> Normaliza tipos numéricos con <code>Math.round()</code> para temperatura, sensación térmica y viento.</li>
+              <li><strong>Propiedades Esenciales:</strong> Almacena ciudad, país, temperatura, sensación térmica, humedad, viento, condición e ícono.</li>
+              <li><strong>Integridad:</strong> Protege la interfaz contra valores <code>null</code> o formatos inesperados del proveedor.</li>
+            </ul>
+          </div>
+          <div class="code-card">
+            <div class="code-header">
+              <div class="code-header-left">
+                <div class="code-dots"><span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span></div>
+                <span>js/models/Clima.js</span>
+              </div>
+              <button class="btn-expand-code" type="button" data-template="code-clima" title="Ampliar archivo completo">
+                <span>⛶</span> Ampliar código
+              </button>
+            </div>
+            <pre><code><span class="kw">export class</span> <span class="fn">Clima</span> {
+  <span class="fn">constructor</span>({ ciudad, pais, temperatura, sensacionTermica, humedad, viento, codigoWmo, esDia = <span class="num">1</span> }) {
+    <span class="kw">this</span>.ciudad = ciudad;
+    <span class="kw">this</span>.pais = pais;
+    <span class="kw">this</span>.temperatura = Math.<span class="fn">round</span>(temperatura);
+    <span class="kw">this</span>.sensacionTermica = Math.<span class="fn">round</span>(sensacionTermica);
+    <span class="kw">this</span>.humedad = humedad;
+    <span class="kw">this</span>.viento = Math.<span class="fn">round</span>(viento);
+    <span class="kw">this</span>.codigoWmo = codigoWmo;
+    <span class="kw">this</span>.esDia = esDia;
+
+    <span class="cm">// Traduce código WMO a texto e ícono SVG</span>
+    <span class="kw">const</span> infoWmo = Clima.<span class="fn">mapearWMO</span>(codigoWmo, esDia);
+    <span class="kw">this</span>.condicion = infoWmo.descripcion;
+    <span class="kw">this</span>.icono = infoWmo.icono;
+  }
+}</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- DIAPOSITIVA 7: MÉTODOS DE DOMINIO Y CONVERSIÓN -->
+      <section class="slide">
+        <div class="slide-req">📋 Requisito Oficial: Sección 9 (Métodos de Instancia) &amp; Sección 12 (Conversión °C/°F)</div>
+        <h2 class="slide-title">🌡️ Diapositiva 7: Métodos de Dominio y Conversión de Unidades</h2>
+        <div class="split-grid">
+          <div class="info-card">
+            <h3>💡 Lógica de Negocio Encapsulada</h3>
+            <ul class="bullet-list">
+              <li><strong><code>toFahrenheit()</code>:</strong> Conversión matemática precisa: <code>(°C × 9/5) + 32</code> redondeada.</li>
+              <li><strong><code>obtenerTemperatura(unidad)</code>:</strong> Devuelve la temperatura calculada según la unidad activa ('C' o 'F').</li>
+              <li><strong><code>obtenerUbicacionCompleta()</code>:</strong> Retorna la cadena compuesta <code>"Ciudad, País"</code>.</li>
+              <li><strong><code>esCalido()</code>:</strong> Lógica de negocio que determina si la temperatura supera los 24 °C para estilizado visual.</li>
+            </ul>
+          </div>
+          <div class="code-card">
+            <div class="code-header">
+              <div class="code-header-left">
+                <div class="code-dots"><span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span></div>
+                <span>js/models/Clima.js</span>
+              </div>
+              <button class="btn-expand-code" type="button" data-template="code-clima" title="Ampliar archivo completo">
+                <span>⛶</span> Ampliar código
+              </button>
+            </div>
+            <pre><code><span class="fn">obtenerUbicacionCompleta</span>() {
+  <span class="kw">return</span> `<span class="str">${this.ciudad}, ${this.pais}</span>`;
+}
+
+<span class="fn">toFahrenheit</span>(celsius) {
+  <span class="kw">return</span> Math.<span class="fn">round</span>((celsius * <span class="num">9</span> / <span class="num">5</span>) + <span class="num">32</span>);
+}
+
+<span class="fn">obtenerTemperatura</span>(unidad = <span class="str">'C'</span>) {
+  <span class="kw">return</span> unidad === <span class="str">'F'</span> ? <span class="kw">this</span>.<span class="fn">toFahrenheit</span>(<span class="kw">this</span>.temperatura) : <span class="kw">this</span>.temperatura;
+}
+
+<span class="fn">obtenerSensacion</span>(unidad = <span class="str">'C'</span>) {
+  <span class="kw">return</span> unidad === <span class="str">'F'</span> ? <span class="kw">this</span>.<span class="fn">toFahrenheit</span>(<span class="kw">this</span>.sensacionTermica) : <span class="kw">this</span>.sensacionTermica;
+}
+
+<span class="fn">esCalido</span>() {
+  <span class="kw">return this</span>.temperatura >= <span class="num">24</span>;
+}</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- DIAPOSITIVA 8: MAPEO WMO Y NORMALIZACIÓN -->
+      <section class="slide">
+        <div class="slide-req">📋 Requisito Oficial: Sección 3 (Condición Meteorológica e Ícono) &amp; Sección 9 (Método Estático)</div>
+        <h2 class="slide-title">🗺️ Diapositiva 8: Mapeo WMO y Normalización de Códigos Meteorológicos</h2>
+        <div class="split-grid">
+          <div class="info-card">
+            <h3>💡 Desacoplamiento de la API Externa</h3>
+            <ul class="bullet-list">
+              <li><strong>Estándar Internacional OMM:</strong> La API Open-Meteo entrega códigos numéricos universales (WMO Weather interpretation codes).</li>
+              <li><strong>Método Estático <code>Clima.mapearWMO()</code>:</strong> No requiere instanciar un objeto para traducir el código a una descripción amigable en español.</li>
+              <li><strong>Asignación Dinámica de Íconos:</strong> Selecciona automáticamente la variante diurna o nocturna del SVG según el valor de <code>is_day</code>.</li>
+            </ul>
+          </div>
+          <div class="code-card">
+            <div class="code-header">
+              <div class="code-header-left">
+                <div class="code-dots"><span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span></div>
+                <span>js/models/Clima.js</span>
+              </div>
+              <button class="btn-expand-code" type="button" data-template="code-clima" title="Ampliar archivo completo">
+                <span>⛶</span> Ampliar código
+              </button>
+            </div>
+            <pre><code><span class="kw">static</span> <span class="fn">mapearWMO</span>(codigo, esDia = <span class="kw">true</span>) {
+  <span class="kw">const</span> iconoDespejado = esDia
+    ? <span class="str">'assets/icons/weather/clear-day.svg'</span>
+    : <span class="str">'assets/icons/weather/clear-night.svg'</span>;
+  <span class="kw">const</span> iconoParcial = esDia
+    ? <span class="str">'assets/icons/weather/partly-cloudy.svg'</span>
+    : <span class="str">'assets/icons/weather/partly-cloudy-night.svg'</span>;
+
+  <span class="kw">const</span> mapa = {
+    <span class="num">0</span>: { condicion: <span class="str">'Cielo despejado'</span>, icono: iconoDespejado },
+    <span class="num">1</span>: { condicion: <span class="str">'Mayormente despejado'</span>, icono: iconoDespejado },
+    <span class="num">2</span>: { condicion: <span class="str">'Parcialmente nublado'</span>, icono: iconoParcial },
+    <span class="num">3</span>: { condicion: <span class="str">'Nublado'</span>, icono: <span class="str">'assets/icons/weather/cloudy.svg'</span> },
+    <span class="num">61</span>: { condicion: <span class="str">'Lluvia ligera'</span>, icono: <span class="str">'assets/icons/weather/rain.svg'</span> },
+    <span class="num">95</span>: { condicion: <span class="str">'Tormenta eléctrica'</span>, icono: <span class="str">'assets/icons/weather/thunderstorm.svg'</span> }
+  };
+  <span class="kw">return</span> mapa[codigo] || { condicion: <span class="str">'Condición variable'</span>, icono: iconoParcial };
+}</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- DIAPOSITIVA 9: HISTORIAL CON ARREGLOS -->
+      <section class="slide">
+        <div class="slide-req">📋 Requisito Oficial: Sección 8 (Historial con Arreglos) &amp; Sección 1 (Arreglos) &amp; Sección 15.2</div>
+        <h2 class="slide-title">📋 Diapositiva 9: Gestión del Historial de Búsquedas con Arreglos</h2>
+        <div class="split-grid">
+          <div class="info-card">
+            <h3>💡 Justificación Técnica de Arreglos (`Array`)</h3>
+            <ul class="bullet-list">
+              <li><strong>¿Por qué un Arreglo?:</strong> Es la estructura lineal óptima para almacenar colecciones ordenadas cronológicamente, permitiendo acceso por índice y mutación controlada.</li>
+              <li><strong>Encapsulamiento del Estado:</strong> La propiedad interna <code>this._ciudades</code> mantiene la lista limpia de ciudades.</li>
+              <li><strong>Inmutabilidad Externa:</strong> El método <code>obtenerTodas()</code> devuelve una copia con el operador spread (<code>[...this._ciudades]</code>) para proteger la lista original.</li>
+            </ul>
+          </div>
+          <div class="code-card">
+            <div class="code-header">
+              <div class="code-header-left">
+                <div class="code-dots"><span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span></div>
+                <span>js/models/Historial.js</span>
+              </div>
+              <button class="btn-expand-code" type="button" data-template="code-historial" title="Ampliar archivo completo">
+                <span>⛶</span> Ampliar código
+              </button>
+            </div>
+            <pre><code><span class="kw">export class</span> <span class="fn">Historial</span> {
+  <span class="fn">constructor</span>(limite = <span class="num">5</span>, storageKey = <span class="str">'weather_dashboard_history'</span>) {
+    <span class="kw">this</span>.limite = limite;
+    <span class="kw">this</span>.storageKey = storageKey;
+    <span class="kw">this</span>._ciudades = [];
+    <span class="kw">this</span>.<span class="fn">cargarDeStorage</span>();
+  }
+
+  <span class="fn">obtenerTodas</span>() {
+    <span class="cm">// Retorna copia inmutable del arreglo</span>
+    <span class="kw">return</span> [...<span class="kw">this</span>._ciudades];
+  }
+
+  <span class="kw">get</span> <span class="fn">total</span>() {
+    <span class="kw">return this</span>._ciudades.length;
+  }
+}</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- DIAPOSITIVA 10: OPERACIONES INMUTABLES Y DEDUPLICACIÓN -->
+      <section class="slide">
+        <div class="slide-req">📋 Requisito Oficial: Sección 8 (Sin Duplicados, Límite Estricto de Búsquedas) &amp; Sección 15.2</div>
+        <h2 class="slide-title">🔄 Diapositiva 10: Operaciones Inmutables y Deduplicación</h2>
+        <div class="split-grid">
+          <div class="info-card">
+            <h3>💡 Métodos Funcionales de Arreglos</h3>
+            <ul class="bullet-list">
+              <li><strong><code>filter()</code>:</strong> Elimina cualquier ocurrencia previa de la misma ciudad normalizando a minúsculas, garantizando **cero duplicados**.</li>
+              <li><strong><code>unshift()</code>:</strong> Inserta la ciudad recién consultada en la posición inicial (índice 0), otorgándole prioridad de más reciente.</li>
+              <li><strong><code>slice(0, 5)</code>:</strong> Trunca estrictamente el arreglo al límite configurado de 5 elementos.</li>
+            </ul>
+          </div>
+          <div class="code-card">
+            <div class="code-header">
+              <div class="code-header-left">
+                <div class="code-dots"><span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span></div>
+                <span>js/models/Historial.js</span>
+              </div>
+              <button class="btn-expand-code" type="button" data-template="code-historial" title="Ampliar archivo completo">
+                <span>⛶</span> Ampliar código
+              </button>
+            </div>
+            <pre><code><span class="fn">agregar</span>(ciudad) {
+  <span class="kw">const</span> nombreLimpio = (ciudad || <span class="str">''</span>).<span class="fn">trim</span>();
+  <span class="kw">if</span> (!nombreLimpio) <span class="kw">return</span>;
+
+  <span class="cm">// 1. Filtrar duplicados previos (insensible a mayúsculas)</span>
+  <span class="kw">this</span>._ciudades = <span class="kw">this</span>._ciudades.<span class="fn">filter</span>(
+    (c) => c.<span class="fn">toLowerCase</span>() !== nombreLimpio.<span class="fn">toLowerCase</span>()
+  );
+
+  <span class="cm">// 2. Insertar al inicio de la lista</span>
+  <span class="kw">this</span>._ciudades.<span class="fn">unshift</span>(nombreLimpio);
+
+  <span class="cm">// 3. Mantener tamaño máximo de 5 elementos</span>
+  <span class="kw">if</span> (<span class="kw">this</span>._ciudades.length > <span class="kw">this</span>.limite) {
+    <span class="kw">this</span>._ciudades = <span class="kw">this</span>._ciudades.<span class="fn">slice</span>(<span class="num">0</span>, <span class="kw">this</span>.limite);
+  }
+
+  <span class="kw">this</span>.<span class="fn">guardarEnStorage</span>();
+}</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- DIAPOSITIVA 11: PERSISTENCIA LOCALSTORAGE Y LIMPIEZA -->
+      <section class="slide">
+        <div class="slide-req">📋 Requisito Oficial: Sección 8 (Limpiar Historial) &amp; Sección 12 (Persistencia con localStorage)</div>
+        <h2 class="slide-title">💾 Diapositiva 11: Persistencia Local con `localStorage` y Limpieza</h2>
+        <div class="split-grid">
+          <div class="info-card">
+            <h3>💡 Persistencia entre Sesiones y Limpieza</h3>
+            <ul class="bullet-list">
+              <li><strong><code>JSON.stringify()</code>:</strong> Transforma el arreglo de JavaScript a una cadena de texto para almacenarlo en <code>localStorage</code>.</li>
+              <li><strong><code>JSON.parse()</code>:</strong> Reconstruye el arreglo al iniciar la aplicación, protegido con bloque <code>try / catch</code> ante datos corruptos.</li>
+              <li><strong><code>limpiar()</code>:</strong> Vacía el arreglo interno en memoria y remueve la clave del almacenamiento web.</li>
+            </ul>
+          </div>
+          <div class="code-card">
+            <div class="code-header">
+              <div class="code-header-left">
+                <div class="code-dots"><span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span></div>
+                <span>js/models/Historial.js</span>
+              </div>
+              <button class="btn-expand-code" type="button" data-template="code-historial" title="Ampliar archivo completo">
+                <span>⛶</span> Ampliar código
+              </button>
+            </div>
+            <pre><code><span class="fn">guardarEnStorage</span>() {
+  <span class="kw">try</span> {
+    localStorage.<span class="fn">setItem</span>(<span class="kw">this</span>.storageKey, JSON.<span class="fn">stringify</span>(<span class="kw">this</span>._ciudades));
+  } <span class="kw">catch</span> (e) {
+    console.<span class="fn">warn</span>(<span class="str">'No se pudo guardar en localStorage:'</span>, e);
+  }
+}
+
+<span class="fn">cargarDeStorage</span>() {
+  <span class="kw">try</span> {
+    <span class="kw">const</span> raw = localStorage.<span class="fn">getItem</span>(<span class="kw">this</span>.storageKey);
+    <span class="kw">this</span>._ciudades = raw ? JSON.<span class="fn">parse</span>(raw) : [];
+  } <span class="kw">catch</span> (e) {
+    <span class="kw">this</span>._ciudades = [];
+  }
+}
+
+<span class="fn">limpiar</span>() {
+  <span class="kw">this</span>._ciudades = [];
+  localStorage.<span class="fn">removeItem</span>(<span class="kw">this</span>.storageKey);
+}</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- DIAPOSITIVA 12: FUNDAMENTOS DE PROMESAS -->
+      <section class="slide">
+        <div class="slide-req">📋 Requisito Oficial: Sección 4 (Uso de Promesas y fetch) &amp; Sección 15.5</div>
+        <h2 class="slide-title">🌐 Diapositiva 12: Fundamentos de Promesas y Peticiones Asíncronas</h2>
+        <div class="split-grid">
+          <div class="info-card">
+            <h3>💡 ¿Qué es una Promesa y cómo interviene?</h3>
+            <ul class="bullet-list">
+              <li><strong>Concepto:</strong> Objeto nativo de JavaScript que representa el resultado eventual de una operación asíncrona en red que tarda un tiempo indeterminado.</li>
+              <li><strong>Ciclo de Estados:</strong> Inicia en <code>Pending</code> (pendiente) y finaliza en <code>Fulfilled</code> (resuelta) o <code>Rejected</code> (rechazada por fallo).</li>
+              <li><strong>Naturaleza No Bloqueante:</strong> La petición HTTP no congela la interfaz del usuario ni el hilo principal de ejecución.</li>
+            </ul>
+          </div>
+          <div class="code-card">
+            <div class="code-header">
+              <div class="code-header-left">
+                <div class="code-dots"><span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span></div>
+                <span>js/services/WeatherService.js</span>
+              </div>
+              <button class="btn-expand-code" type="button" data-template="code-service" title="Ampliar archivo completo">
+                <span>⛶</span> Ampliar código
+              </button>
+            </div>
+            <pre><code><span class="cm">// Demostración conceptual de Promesa nativa</span>
+<span class="fn">fetch</span>(<span class="str">'https://geocoding-api.open-meteo.com/v1/search?name=Lima'</span>)
+  .<span class="fn">then</span>((respuesta) => {
+    <span class="kw">if</span> (!respuesta.ok) <span class="kw">throw new</span> <span class="fn">Error</span>(<span class="str">'Error en el servidor'</span>);
+    <span class="kw">return</span> respuesta.<span class="fn">json</span>(); <span class="cm">// Segunda promesa de parseo</span>
+  })
+  .<span class="fn">then</span>((datos) => console.<span class="fn">log</span>(<span class="str">'Datos recibidos:'</span>, datos))
+  .<span class="fn">catch</span>((error) => console.<span class="fn">error</span>(<span class="str">'Fallo capturado:'</span>, error))
+  .<span class="fn">finally</span>(() => console.<span class="fn">log</span>(<span class="str">'Operación finalizada'</span>));</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- DIAPOSITIVA 13: FLUJO ASYNC / AWAIT -->
+      <section class="slide">
+        <div class="slide-req">📋 Requisito Oficial: Sección 5 (Uso de async/await) &amp; Sección 15.6</div>
+        <h2 class="slide-title">⚡ Diapositiva 13: Flujo Asíncrono Secuencial con `async / await`</h2>
+        <div class="split-grid">
+          <div class="info-card">
+            <h3>💡 ¿Qué hace `async` y `await`?</h3>
+            <ul class="bullet-list">
+              <li><strong>`async`:</strong> Declara una función asíncrona y envuelve automáticamente su valor de retorno en una Promesa.</li>
+              <li><strong>`await`:</strong> Pausa la ejecución dentro de la función hasta que la Promesa se resuelva, permitiendo escribir código asíncrono con aspecto secuencial.</li>
+              <li><strong>Ventaja Técnica:</strong> Elimina el anidamiento excesivo de <code>.then()</code> y permite capturar errores de forma limpia con <code>try / catch</code>.</li>
+            </ul>
+          </div>
+          <div class="code-card">
+            <div class="code-header">
+              <div class="code-header-left">
+                <div class="code-dots"><span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span></div>
+                <span>js/services/WeatherService.js</span>
+              </div>
+              <button class="btn-expand-code" type="button" data-template="code-service" title="Ampliar archivo completo">
+                <span>⛶</span> Ampliar código
+              </button>
+            </div>
+            <pre><code><span class="kw">export class</span> <span class="fn">WeatherService</span> {
+  <span class="kw">async</span> <span class="fn">consultarClima</span>(nombreCiudad) {
+    <span class="cm">// 1. await espera la respuesta de geocodificación</span>
+    <span class="kw">const</span> resGeo = <span class="kw">await</span> <span class="fn">fetch</span>(urlGeocoding);
+    <span class="kw">if</span> (!resGeo.ok) <span class="kw">throw new</span> <span class="fn">Error</span>(<span class="str">'Error en geocodificación'</span>);
+    <span class="kw">const</span> dataGeo = <span class="kw">await</span> resGeo.<span class="fn">json</span>();
+
+    <span class="cm">// 2. await espera la respuesta meteorológica</span>
+    <span class="kw">const</span> resClima = <span class="kw">await</span> <span class="fn">fetch</span>(urlForecast);
+    <span class="kw">if</span> (!resClima.ok) <span class="kw">throw new</span> <span class="fn">Error</span>(<span class="str">'Error al consultar pronóstico'</span>);
+    <span class="kw">const</span> dataClima = <span class="kw">await</span> resClima.<span class="fn">json</span>();
+
+    <span class="kw">return new</span> <span class="fn">Clima</span>({ ... });
+  }
+}</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- DIAPOSITIVA 14: PIPELINE GEOCODING Y PRONÓSTICO -->
+      <section class="slide">
+        <div class="slide-req">📋 Requisito Oficial: Sección 3 (API Open-Meteo) &amp; Sección 10 (Manejo de Errores)</div>
+        <h2 class="slide-title">🎯 Diapositiva 14: Pipeline Geocoding ➔ Pronóstico y Resiliencia</h2>
+        <div class="split-grid">
+          <div class="info-card">
+            <h3>💡 Coordinación de Endpoints y Resiliencia</h3>
+            <ul class="bullet-list">
+              <li><strong>Fase 1 (Geocodificación):</strong> Convierte el texto de la ciudad en latitud y longitud geográficas.</li>
+              <li><strong>Validación de Ciudad Inexistente:</strong> Si <code>dataGeo.results</code> está vacío, lanza una excepción controlada: <code>No se encontró la ciudad</code>.</li>
+              <li><strong>Fase 2 (Forecast):</strong> Consulta los parámetros actuales con las coordenadas y retorna un objeto de dominio <code>Clima</code>.</li>
+            </ul>
+          </div>
+          <div class="code-card">
+            <div class="code-header">
+              <div class="code-header-left">
+                <div class="code-dots"><span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span></div>
+                <span>js/services/WeatherService.js</span>
+              </div>
+              <button class="btn-expand-code" type="button" data-template="code-service" title="Ampliar archivo completo">
+                <span>⛶</span> Ampliar código
+              </button>
+            </div>
+            <pre><code><span class="cm">// Validación de resultados vacíos según Sección 10</span>
+<span class="kw">if</span> (!dataGeo.results || dataGeo.results.length === <span class="num">0</span>) {
+  <span class="kw">throw new</span> <span class="fn">Error</span>(`<span class="str">No se encontró la ciudad "${nombreCiudad}". Verifica la ortografía.</span>`);
+}
+
+<span class="kw">const</span> loc = dataGeo.results[<span class="num">0</span>];
+<span class="kw">const</span> urlClima = `<span class="str">https://api.open-meteo.com/v1/forecast?latitude=${loc.latitude}&longitude=${loc.longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,is_day</span>`;
+
+<span class="kw">const</span> resClima = <span class="kw">await</span> <span class="fn">fetch</span>(urlClima);
+<span class="kw">const</span> dataClima = <span class="kw">await</span> resClima.<span class="fn">json</span>();
+
+<span class="kw">return new</span> <span class="fn">Clima</span>({
+  ciudad: loc.name,
+  pais: loc.country || <span class="str">''</span>,
+  temperatura: dataClima.current.temperature_2m,
+  sensacionTermica: dataClima.current.apparent_temperature,
+  humedad: dataClima.current.relative_humidity_2m,
+  viento: dataClima.current.wind_speed_10m,
+  codigoWmo: dataClima.current.weather_code,
+  esDia: dataClima.current.is_day
+});</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- DIAPOSITIVA 15: CACHÉ DE NODOS DEL DOM -->
+      <section class="slide">
+        <div class="slide-req">📋 Requisito Oficial: Sección 6 (Manipulación del DOM) &amp; Sección 15.3</div>
+        <h2 class="slide-title">🖼️ Diapositiva 15: Caché de Nodos del DOM y Rendimiento</h2>
+        <div class="split-grid">
+          <div class="info-card">
+            <h3>💡 Optimización de Selectores del DOM</h3>
+            <ul class="bullet-list">
+              <li><strong>Caché en el Constructor:</strong> Almacena las referencias a los elementos HTML una sola vez durante la instanciación de <code>DomRenderer</code>.</li>
+              <li><strong>Eficiencia Computacional:</strong> Evita re-consultar el árbol del DOM en cada búsqueda, minimizando los eventos de recálculo de diseño (*reflow*).</li>
+              <li><strong>Encapsulamiento UI:</strong> Ninguna otra clase del proyecto accede directamente a <code>document</code>; toda interacción pasa por <code>DomRenderer</code>.</li>
+            </ul>
+          </div>
+          <div class="code-card">
+            <div class="code-header">
+              <div class="code-header-left">
+                <div class="code-dots"><span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span></div>
+                <span>js/ui/DomRenderer.js</span>
+              </div>
+              <button class="btn-expand-code" type="button" data-template="code-dom" title="Ampliar archivo completo">
+                <span>⛶</span> Ampliar código
+              </button>
+            </div>
+            <pre><code><span class="kw">export class</span> <span class="fn">DomRenderer</span> {
+  <span class="fn">constructor</span>() {
+    <span class="kw">this</span>.searchForm = document.<span class="fn">getElementById</span>(<span class="str">'search-form'</span>);
+    <span class="kw">this</span>.searchInput = document.<span class="fn">getElementById</span>(<span class="str">'search-input'</span>);
+    <span class="kw">this</span>.btnSearch = document.<span class="fn">getElementById</span>(<span class="str">'btn-search'</span>);
+    <span class="kw">this</span>.searchFeedback = document.<span class="fn">getElementById</span>(<span class="str">'search-feedback'</span>);
+
+    <span class="kw">this</span>.loadingSpinner = document.<span class="fn">getElementById</span>(<span class="str">'loading-spinner'</span>);
+    <span class="kw">this</span>.errorCard = document.<span class="fn">getElementById</span>(<span class="str">'error-card'</span>);
+    <span class="kw">this</span>.errorMessage = document.<span class="fn">getElementById</span>(<span class="str">'error-message'</span>);
+
+    <span class="kw">this</span>.weatherContainer = document.<span class="fn">getElementById</span>(<span class="str">'weather-container'</span>);
+    <span class="kw">this</span>.weatherCard = document.<span class="fn">getElementById</span>(<span class="str">'weather-card'</span>);
+    <span class="kw">this</span>.weatherCityName = document.<span class="fn">getElementById</span>(<span class="str">'weather-city-name'</span>);
+    <span class="kw">this</span>.weatherTemp = document.<span class="fn">getElementById</span>(<span class="str">'weather-temp'</span>);
+    <span class="kw">this</span>.weatherUnit = document.<span class="fn">getElementById</span>(<span class="str">'weather-unit'</span>);
+
+    <span class="kw">this</span>.historyList = document.<span class="fn">getElementById</span>(<span class="str">'history-list'</span>);
+    <span class="kw">this</span>.historyCount = document.<span class="fn">getElementById</span>(<span class="str">'history-count'</span>);
+  }
+}</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- DIAPOSITIVA 16: RENDERIZADO DINÁMICO DE TARJETA -->
+      <section class="slide">
+        <div class="slide-req">📋 Requisito Oficial: Sección 6 (Manipulación del DOM) &amp; Sección 3 (Sin Datos Manuales)</div>
+        <h2 class="slide-title">🌤️ Diapositiva 16: Renderizado Dinámico de la Tarjeta del Clima</h2>
+        <div class="split-grid">
+          <div class="info-card">
+            <h3>💡 Inyección Dinámica y Protección XSS</h3>
+            <ul class="bullet-list">
+              <li><strong><code>textContent</code>:</strong> Asigna cadenas de texto de forma segura sin interpretar código HTML malicioso.</li>
+              <li><strong>Modificadores Térmicos:</strong> Aplica dinámicamente las clases <code>card--warm</code> o <code>card--cold</code> según el resultado de <code>clima.esCalido()</code>.</li>
+              <li><strong>Reemplazo Limpio:</strong> Al buscar una nueva ciudad, los datos meteorológicos previos son sobreescritos al instante.</li>
+            </ul>
+          </div>
+          <div class="code-card">
+            <div class="code-header">
+              <div class="code-header-left">
+                <div class="code-dots"><span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span></div>
+                <span>js/ui/DomRenderer.js</span>
+              </div>
+              <button class="btn-expand-code" type="button" data-template="code-dom" title="Ampliar archivo completo">
+                <span>⛶</span> Ampliar código
+              </button>
+            </div>
+            <pre><code><span class="fn">renderizarClima</span>(clima, unidad = <span class="str">'C'</span>) {
+  <span class="kw">this</span>.weatherCityName.textContent = clima.<span class="fn">obtenerUbicacionCompleta</span>();
+  <span class="kw">this</span>.weatherBadge.textContent = clima.condicion;
+  <span class="kw">this</span>.weatherTemp.textContent = clima.<span class="fn">obtenerTemperatura</span>(unidad);
+  <span class="kw">this</span>.weatherUnit.textContent = `°${unidad}`;
+  <span class="kw">this</span>.weatherFeelsLike.textContent = `${clima.<span class="fn">obtenerSensacion</span>(unidad)}°${unidad}`;
+  <span class="kw">this</span>.weatherHumidity.textContent = `${clima.humedad}%`;
+  <span class="kw">this</span>.weatherWind.textContent = `${clima.viento} km/h`;
+  <span class="kw">this</span>.weatherIcon.src = clima.icono;
+  <span class="kw">this</span>.weatherIcon.alt = clima.condicion;
+
+  <span class="cm">// Clases térmicas contextuales</span>
+  <span class="kw">this</span>.weatherCard.classList.<span class="fn">remove</span>(<span class="str">'card--warm'</span>, <span class="str">'card--cold'</span>);
+  <span class="kw">if</span> (clima.<span class="fn">esCalido</span>()) {
+    <span class="kw">this</span>.weatherCard.classList.<span class="fn">add</span>(<span class="str">'card--warm'</span>);
+  } <span class="kw">else if</span> (clima.temperatura < <span class="num">10</span>) {
+    <span class="kw">this</span>.weatherCard.classList.<span class="fn">add</span>(<span class="str">'card--cold'</span>);
+  }
+
+  <span class="kw">this</span>.weatherContainer.classList.<span class="fn">remove</span>(<span class="str">'hidden'</span>);
+}</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- DIAPOSITIVA 17: INDICADOR DE CARGA Y ERROR -->
+      <section class="slide">
+        <div class="slide-req">📋 Requisito Oficial: Sección 10 (Manejo de Errores) &amp; Sección 11 (Indicador de Carga)</div>
+        <h2 class="slide-title">⏳ Diapositiva 17: Indicador de Carga Asíncrono y Tarjeta de Error</h2>
+        <div class="split-grid">
+          <div class="info-card">
+            <h3>💡 Estados Visuales Accesibles</h3>
+            <ul class="bullet-list">
+              <li><strong>Indicador de Carga (<code>mostrarCargando</code>):</strong> Alterna la visibilidad del spinner, desactiva temporalmente el botón y el input para prevenir envíos duplicados.</li>
+              <li><strong>Manejo de Excepciones Visuales:</strong> Inyecta mensajes descriptivos en <code>#error-card</code> (ciudad no encontrada, fallo de red o entrada inválida).</li>
+              <li><strong>Accesibilidad:</strong> Uso del atributo estándar <code>aria-busy="true"</code> para lectores de pantalla.</li>
+            </ul>
+          </div>
+          <div class="code-card">
+            <div class="code-header">
+              <div class="code-header-left">
+                <div class="code-dots"><span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span></div>
+                <span>js/ui/DomRenderer.js</span>
+              </div>
+              <button class="btn-expand-code" type="button" data-template="code-dom" title="Ampliar archivo completo">
+                <span>⛶</span> Ampliar código
+              </button>
+            </div>
+            <pre><code><span class="fn">mostrarCargando</span>(visible) {
+  <span class="kw">if</span> (!<span class="kw">this</span>.loadingSpinner) <span class="kw">return</span>;
+  <span class="kw">this</span>.loadingSpinner.classList.<span class="fn">toggle</span>(<span class="str">'hidden'</span>, !visible);
+  <span class="kw">if</span> (<span class="kw">this</span>.btnSearch) <span class="kw">this</span>.btnSearch.disabled = visible;
+  <span class="kw">if</span> (<span class="kw">this</span>.searchInput) <span class="kw">this</span>.searchInput.disabled = visible;
+
+  <span class="kw">if</span> (visible) {
+    <span class="kw">this</span>.<span class="fn">ocultarError</span>();
+    <span class="kw">if</span> (<span class="kw">this</span>.weatherContainer) <span class="kw">this</span>.weatherContainer.classList.<span class="fn">add</span>(<span class="str">'hidden'</span>);
+  }
+}
+
+<span class="fn">mostrarError</span>(mensaje) {
+  <span class="kw">if</span> (!<span class="kw">this</span>.errorCard || !<span class="kw">this</span>.errorMessage) <span class="kw">return</span>;
+  <span class="kw">this</span>.errorMessage.textContent = mensaje;
+  <span class="kw">this</span>.errorCard.classList.<span class="fn">remove</span>(<span class="str">'hidden'</span>);
+  <span class="kw">if</span> (<span class="kw">this</span>.weatherContainer) <span class="kw">this</span>.weatherContainer.classList.<span class="fn">add</span>(<span class="str">'hidden'</span>);
+}</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- DIAPOSITIVA 18: RENDERIZADO DEL HISTORIAL -->
+      <section class="slide">
+        <div class="slide-req">📋 Requisito Oficial: Sección 6 (DOM) &amp; Sección 8 (Historial en el DOM)</div>
+        <h2 class="slide-title">🏷️ Diapositiva 18: Renderizado Dinámico del Historial y Estado Vacío</h2>
+        <div class="split-grid">
+          <div class="info-card">
+            <h3>💡 Generación Dinámica de Nodos</h3>
+            <ul class="bullet-list">
+              <li><strong>Creación Dinámica de Elementos:</strong> Utiliza <code>document.createElement('button')</code> para generar los botones chips interactivos.</li>
+              <li><strong>Atributo <code>data-city</code>:</strong> Guarda el nombre de la ciudad para permitir re-consultas con un solo clic.</li>
+              <li><strong>Estado Vacío Accesible:</strong> Muestra un mensaje amigable cuando no existen búsquedas guardadas y deshabilita el botón de limpieza.</li>
+            </ul>
+          </div>
+          <div class="code-card">
+            <div class="code-header">
+              <div class="code-header-left">
+                <div class="code-dots"><span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span></div>
+                <span>js/ui/DomRenderer.js</span>
+              </div>
+              <button class="btn-expand-code" type="button" data-template="code-dom" title="Ampliar archivo completo">
+                <span>⛶</span> Ampliar código
+              </button>
+            </div>
+            <pre><code><span class="fn">renderizarHistorial</span>(ciudades = []) {
+  <span class="kw">if</span> (!<span class="kw">this</span>.historyList) <span class="kw">return</span>;
+  <span class="kw">this</span>.historyList.innerHTML = <span class="str">''</span>;
+
+  <span class="kw">if</span> (ciudades.length === <span class="num">0</span>) {
+    <span class="kw">this</span>.historyList.innerHTML = <span class="str">'&lt;p class="history-empty"&gt;No hay búsquedas recientes&lt;/p&gt;'</span>;
+    <span class="kw">if</span> (<span class="kw">this</span>.historyCount) <span class="kw">this</span>.historyCount.textContent = <span class="str">'(0)'</span>;
+    <span class="kw">if</span> (<span class="kw">this</span>.btnClearHistory) <span class="kw">this</span>.btnClearHistory.disabled = <span class="kw">true</span>;
+    <span class="kw">return</span>;
+  }
+
+  <span class="kw">if</span> (<span class="kw">this</span>.historyCount) <span class="kw">this</span>.historyCount.textContent = `(${ciudades.length})`;
+  <span class="kw">if</span> (<span class="kw">this</span>.btnClearHistory) <span class="kw">this</span>.btnClearHistory.disabled = <span class="kw">false</span>;
+
+  ciudades.<span class="fn">forEach</span>((ciudad) => {
+    <span class="kw">const</span> chip = document.<span class="fn">createElement</span>(<span class="str">'button'</span>);
+    chip.type = <span class="str">'button'</span>;
+    chip.className = <span class="str">'history-chip'</span>;
+    chip.dataset.city = ciudad;
+    chip.innerHTML = `<span class="chip-pin">📍</span> <span>${ciudad}</span>`;
+    <span class="kw">this</span>.historyList.<span class="fn">appendChild</span>(chip);
+  });
+}</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- DIAPOSITIVA 19: PUNTO DE ENTRADA DOMCONTENTLOADED -->
+      <section class="slide">
+        <div class="slide-req">📋 Requisito Oficial: Sección 13 (Requisitos Técnicos) &amp; Sección 14 (app.js como Integrador)</div>
+        <h2 class="slide-title">🚀 Diapositiva 19: Punto de Entrada y Ciclo de Vida (`DOMContentLoaded`)</h2>
+        <div class="split-grid">
+          <div class="info-card">
+            <h3>💡 Inicialización Segura en el Navegador</h3>
+            <ul class="bullet-list">
+              <li><strong>Evento <code>DOMContentLoaded</code>:</strong> Asegura que todos los nodos del DOM existan en memoria antes de adjuntar eventos o consultar elementos.</li>
+              <li><strong>Patrón Orquestador:</strong> La clase <code>App</code> instancia los modelos, el servicio y la capa de UI de forma centralizada.</li>
+              <li><strong>Carga de Preferencias:</strong> Recupera la unidad activa (°C o °F) y renderiza el historial almacenado inmediatamente al abrir la página.</li>
+            </ul>
+          </div>
+          <div class="code-card">
+            <div class="code-header">
+              <div class="code-header-left">
+                <div class="code-dots"><span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span></div>
+                <span>js/app.js</span>
+              </div>
+              <button class="btn-expand-code" type="button" data-template="code-app" title="Ampliar archivo completo">
+                <span>⛶</span> Ampliar código
+              </button>
+            </div>
+            <pre><code><span class="kw">export class</span> <span class="fn">App</span> {
+  <span class="fn">constructor</span>() {
+    <span class="kw">this</span>.weatherService = <span class="kw">new</span> <span class="fn">WeatherService</span>();
+    <span class="kw">this</span>.historial = <span class="kw">new</span> <span class="fn">Historial</span>(<span class="num">5</span>);
+    <span class="kw">this</span>.ui = <span class="kw">new</span> <span class="fn">DomRenderer</span>();
+    <span class="kw">this</span>.unidad = localStorage.<span class="fn">getItem</span>(<span class="str">'weather_unit'</span>) || <span class="str">'C'</span>;
+    <span class="kw">this</span>.climaActual = <span class="kw">null</span>;
+  }
+
+  <span class="fn">iniciar</span>() {
+    <span class="kw">this</span>.<span class="fn">configurarEventos</span>();
+    <span class="kw">this</span>.<span class="fn">configurarEventosDeRed</span>();
+    <span class="kw">this</span>.<span class="fn">cargarEstadoInicial</span>();
+  }
+}
+
+<span class="cm">// Arranque seguro tras cargar el árbol DOM</span>
+document.<span class="fn">addEventListener</span>(<span class="str">'DOMContentLoaded'</span>, () => {
+  <span class="kw">const</span> app = <span class="kw">new</span> <span class="fn">App</span>();
+  app.<span class="fn">iniciar</span>();
+});</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- DIAPOSITIVA 20: EVENTOS DEL BUSCADOR -->
+      <section class="slide">
+        <div class="slide-req">📋 Requisito Oficial: Sección 2.A (Buscador: Clic, Enter, Validación Vacía) &amp; Sección 7</div>
+        <h2 class="slide-title">🔍 Diapositiva 20: Eventos del Buscador (`submit`, `Enter`, Validación)</h2>
+        <div class="split-grid">
+          <div class="info-card">
+            <h3>💡 Eventos y Validación Preventiva</h3>
+            <ul class="bullet-list">
+              <li><strong>Evento <code>submit</code>:</strong> Al asociarse al formulario <code>&lt;form&gt;</code>, captura automáticamente tanto el clic en el botón como pulsar la tecla **Enter**.</li>
+              <li><strong><code>e.preventDefault()</code>:</strong> Anula el comportamiento estándar del navegador de recargar la página.</li>
+              <li><strong>Validación de Campo Vacío:</strong> Cumple estrictamente el Requisito 2.A mostrando advertencia sin enviar peticiones innecesarias.</li>
+            </ul>
+          </div>
+          <div class="code-card">
+            <div class="code-header">
+              <div class="code-header-left">
+                <div class="code-dots"><span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span></div>
+                <span>js/app.js</span>
+              </div>
+              <button class="btn-expand-code" type="button" data-template="code-app" title="Ampliar archivo completo">
+                <span>⛶</span> Ampliar código
+              </button>
+            </div>
+            <pre><code><span class="kw">if</span> (<span class="kw">this</span>.ui.searchForm) {
+  <span class="kw">this</span>.ui.searchForm.<span class="fn">addEventListener</span>(<span class="str">'submit'</span>, (e) => {
+    e.<span class="fn">preventDefault</span>(); <span class="cm">// Evita recargar la página</span>
+    <span class="kw">const</span> ciudad = <span class="kw">this</span>.ui.searchInput ? <span class="kw">this</span>.ui.searchInput.value : <span class="str">''</span>;
+    <span class="kw">this</span>.<span class="fn">buscar</span>(ciudad);
+  });
+}
+
+<span class="kw">async</span> <span class="fn">buscar</span>(ciudadTexto) {
+  <span class="kw">const</span> ciudad = (ciudadTexto || <span class="str">''</span>).<span class="fn">trim</span>();
+
+  <span class="cm">// Validación según Sección 2.A del Enunciado</span>
+  <span class="kw">if</span> (!ciudad) {
+    <span class="kw">this</span>.ui.<span class="fn">mostrarFeedback</span>(<span class="str">'⚠️ Introduce una ciudad para realizar la búsqueda.'</span>);
+    <span class="kw">if</span> (<span class="kw">this</span>.ui.searchInput) <span class="kw">this</span>.ui.searchInput.<span class="fn">focus</span>();
+    <span class="kw">return</span>;
+  }
+
+  <span class="kw">this</span>.ui.<span class="fn">ocultarFeedback</span>();
+  <span class="kw">await this</span>.<span class="fn">ejecutarConsulta</span>(ciudad);
+}</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- DIAPOSITIVA 21: DELEGACIÓN Y TOGGLE -->
+      <section class="slide">
+        <div class="slide-req">📋 Requisito Oficial: Sección 7 (Evento 3: Historial) &amp; Sección 12 (Toggle °C/°F)</div>
+        <h2 class="slide-title">🖱️ Diapositiva 21: Delegación de Eventos en Historial y Toggle de Unidades</h2>
+        <div class="split-grid">
+          <div class="info-card">
+            <h3>💡 Optimización con Delegación de Eventos</h3>
+            <ul class="bullet-list">
+              <li><strong>¿Por qué Delegación?:</strong> Un solo listener en el contenedor <code>#history-list</code> atiende clics de chips presentes y futuros, reduciendo el consumo de memoria.</li>
+              <li><strong><code>event.target.closest()</code>:</strong> Detecta con exactitud si el clic ocurrió dentro de un chip y extrae el atributo <code>dataset.city</code>.</li>
+              <li><strong>Toggle °C / °F:</strong> Recalcula instantáneamente la temperatura del clima actual sin realizar peticiones redundantes a la API.</li>
+            </ul>
+          </div>
+          <div class="code-card">
+            <div class="code-header">
+              <div class="code-header-left">
+                <div class="code-dots"><span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span></div>
+                <span>js/app.js</span>
+              </div>
+              <button class="btn-expand-code" type="button" data-template="code-app" title="Ampliar archivo completo">
+                <span>⛶</span> Ampliar código
+              </button>
+            </div>
+            <pre><code><span class="cm">// Delegación de eventos en historial</span>
+<span class="kw">if</span> (<span class="kw">this</span>.ui.historyList) {
+  <span class="kw">this</span>.ui.historyList.<span class="fn">addEventListener</span>(<span class="str">'click'</span>, (e) => {
+    <span class="kw">const</span> chip = e.target.<span class="fn">closest</span>(<span class="str">'.history-chip'</span>);
+    <span class="kw">if</span> (!chip) <span class="kw">return</span>;
+
+    <span class="kw">const</span> ciudad = chip.dataset.city;
+    <span class="kw">if</span> (ciudad) {
+      <span class="kw">if</span> (<span class="kw">this</span>.ui.searchInput) <span class="kw">this</span>.ui.searchInput.value = ciudad;
+      <span class="kw">this</span>.<span class="fn">buscar</span>(ciudad); <span class="cm">// Re-consulta inmediata</span>
+    }
+  });
+}
+
+<span class="cm">// Alternador dinámico de unidades</span>
+<span class="fn">cambiarUnidad</span>(nuevaUnidad) {
+  <span class="kw">if</span> (<span class="kw">this</span>.unidad === nuevaUnidad) <span class="kw">return</span>;
+  <span class="kw">this</span>.unidad = nuevaUnidad;
+  localStorage.<span class="fn">setItem</span>(<span class="str">'weather_unit'</span>, nuevaUnidad);
+
+  <span class="kw">if</span> (<span class="kw">this</span>.climaActual) {
+    <span class="kw">this</span>.ui.<span class="fn">renderizarClima</span>(<span class="kw">this</span>.climaActual, <span class="kw">this</span>.unidad);
+  }
+}</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- DIAPOSITIVA 22: ORQUESTACIÓN GLOBAL -->
+      <section class="slide">
+        <div class="slide-req">📋 Requisito Oficial: Sección 10 (Manejo de Errores) &amp; Sección 11 (Indicador de Carga) &amp; Sección 15.6</div>
+        <h2 class="slide-title">🛡️ Diapositiva 22: Orquestación Global y Flujo `try / catch / finally`</h2>
+        <div class="split-grid">
+          <div class="info-card">
+            <h3>💡 Integración del Flujo Asíncrono</h3>
+            <ul class="bullet-list">
+              <li><strong><code>try</code>:</strong> Inicia el estado de carga, llama a <code>WeatherService</code>, renderiza en el DOM y actualiza el historial persistente.</li>
+              <li><strong><code>catch</code>:</strong> Captura cualquier fallo de red o ciudad inexistente y lo delega a la UI para feedback visual amigable.</li>
+              <li><strong><code>finally</code>:</strong> Garantiza incondicionalmente que el spinner de carga se oculte al terminar la operación.</li>
+            </ul>
+          </div>
+          <div class="code-card">
+            <div class="code-header">
+              <div class="code-header-left">
+                <div class="code-dots"><span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span></div>
+                <span>js/app.js</span>
+              </div>
+              <button class="btn-expand-code" type="button" data-template="code-app" title="Ampliar archivo completo">
+                <span>⛶</span> Ampliar código
+              </button>
+            </div>
+            <pre><code><span class="kw">async</span> <span class="fn">ejecutarConsulta</span>(nombreCiudad) {
+  <span class="kw">try</span> {
+    <span class="kw">this</span>.ui.<span class="fn">mostrarCargando</span>(<span class="kw">true</span>);
+
+    <span class="cm">// 1. Invocar Servicio Asíncrono</span>
+    <span class="kw">const</span> clima = <span class="kw">await this</span>.weatherService.<span class="fn">consultarClima</span>(nombreCiudad);
+    <span class="kw">this</span>.climaActual = clima;
+
+    <span class="cm">// 2. Renderizar Clima en el DOM</span>
+    <span class="kw">this</span>.ui.<span class="fn">renderizarClima</span>(clima, <span class="kw">this</span>.unidad);
+
+    <span class="cm">// 3. Actualizar Historial y Almacenamiento</span>
+    <span class="kw">this</span>.historial.<span class="fn">agregar</span>(clima.ciudad);
+    <span class="kw">this</span>.ui.<span class="fn">renderizarHistorial</span>(<span class="kw">this</span>.historial.<span class="fn">obtenerTodas</span>());
+
+  } <span class="kw">catch</span> (error) {
+    <span class="kw">this</span>.ui.<span class="fn">mostrarError</span>(error.message);
+  } <span class="kw">finally</span> {
+    <span class="cm">// Apagado garantizado del spinner</span>
+    <span class="kw">this</span>.ui.<span class="fn">mostrarCargando</span>(<span class="kw">false</span>);
+  }
+}</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- DIAPOSITIVA 23: DEMOSTRACIÓN EN VIVO Y CIERRE -->
+      <section class="slide">
+        <div class="slide-req">📋 Requisito Oficial: Sección 15 (Pauta de Demostración del Proyecto)</div>
+        <h2 class="slide-title">🚀 Diapositiva 23: Demostración en Vivo y Sustentación Final</h2>
+        <div class="split-grid-50">
+          <div class="info-card">
+            <h3>🧪 Guion de Pruebas en Vivo</h3>
+            <ul class="bullet-list">
+              <li><strong>1. Búsqueda Exitosa:</strong> Consultar <em>"Cajamarca"</em> o <em>"Madrid"</em> y observar spinner asíncrono, ícono SVG y tarjetas de métricas.</li>
+              <li><strong>2. Toggle de Unidades:</strong> Alternar entre °C y °F recalculando los datos en pantalla instantáneamente sin recargar la página.</li>
+              <li><strong>3. Delegación en Historial:</strong> Clic sobre un chip del historial para relanzar la consulta con un solo clic.</li>
+              <li><strong>4. Resiliencia y Validación:</strong> Probar búsqueda vacía (advertencia) y ciudad inexistente (<em>"Xyz123"</em>).</li>
+              <li><strong>5. Persistencia Local:</strong> Recargar con <strong>F5</strong> comprobando que se conservan búsquedas y unidad en <code>localStorage</code>.</li>
+            </ul>
+          </div>
+          <div class="info-card" style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; gap: 1.5rem;">
+            <h3>🌐 Aplicación en Producción</h3>
+            <div class="demo-box" style="width: 100%; padding: 2rem 1.5rem; gap: 1.2rem;">
+              <span style="font-size: 1.1rem; color: #94a3b8;">Despliegue oficial activo en GitHub Pages:</span>
+              <a href="https://wigsdev.github.io/dashboard-clima/" target="_blank" rel="noopener noreferrer" class="btn-launch-demo">
+                <span class="btn-demo-icon">🌤️</span>
+                <span>Abrir Weather Dashboard en Vivo</span>
+                <span class="btn-demo-arrow">↗</span>
+              </a>
+              <span class="demo-note">https://wigsdev.github.io/dashboard-clima/</span>
+            </div>
+
+            <div class="closing-banner" style="font-size: 1.25rem; margin-top: 0.5rem;">
+              🎉 ¡Muchas Gracias por su Atención!
+              <p style="font-size: 0.95rem; color: #cbd5e1; font-weight: normal; margin-top: 0.4rem;">
+                Espacio abierto para preguntas del docente y revisión del código fuente
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+    <!-- Pie de Navegación -->
+    <footer class="deck-footer">
+      <button id="btn-prev" class="nav-btn">Portada</button>
+      <div id="slide-counter" class="counter">Diapositiva 1 de 23</div>
+      <button id="btn-next" class="nav-btn">Siguiente →</button>
+    </footer>
+  </div>
+
+  <!-- Modal Flotante para Visualizar Código Completo -->
+  <div id="code-modal" class="code-modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-filename">
+    <div class="code-modal-window">
+      <div class="code-modal-header">
+        <div class="code-modal-title-group">
+          <div class="code-dots">
+            <span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span>
+          </div>
+          <span id="modal-filename" class="code-modal-filename">archivo.js</span>
+          <span id="modal-badge" class="code-modal-badge">Código Completo</span>
+        </div>
+        <button id="modal-close-btn" class="code-modal-close" type="button" aria-label="Cerrar modal">
+          <span>Cerrar</span> ✕
+        </button>
+      </div>
+      <div class="code-modal-body">
+        <div id="modal-code-content" class="editor-code-container"></div>
+      </div>
+      <div class="code-modal-footer">
+        <span class="modal-shortcut-hint">Presiona <kbd>Esc</kbd> o haz clic afuera para volver a la diapositiva</span>
+        <span id="modal-line-count">0 líneas</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Plantillas de Código Completo Seguras -->
+  <template id="code-index" data-filename="index.html" data-badge="HTML5 Semántico Completo">&lt;!doctype html&gt;
+&lt;html lang="es"&gt;
+  &lt;head&gt;
+    &lt;meta charset="UTF-8" /&gt;
+    &lt;meta name="viewport" content="width=device-width, initial-scale=1.0" /&gt;
+    &lt;meta
+      name="description"
+      content="Weather Dashboard — Consulta meteorológica en tiempo real mediante API externa con JavaScript Vanilla y POO."
+    /&gt;
+    &lt;title&gt;Weather Dashboard | Clima en Tiempo Real&lt;/title&gt;
+
+    &lt;!-- Favicon e Identidad --&gt;
+    &lt;link rel="icon" type="image/svg+xml" href="assets/favicon.svg" /&gt;
+
+    &lt;!-- Open Graph / Redes Sociales --&gt;
+    &lt;meta property="og:type" content="website" /&gt;
+    &lt;meta property="og:title" content="Weather Dashboard | Clima en Tiempo Real" /&gt;
+    &lt;meta
+      property="og:description"
+      content="Consulta meteorológica en tiempo real mediante API externa con JavaScript Vanilla y POO."
+    /&gt;
+    &lt;meta property="og:image" content="assets/img/og-preview.png" /&gt;
+
+    &lt;!-- Tipografía Google Fonts --&gt;
+    &lt;link rel="preconnect" href="https://fonts.googleapis.com" /&gt;
+    &lt;link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /&gt;
+    &lt;link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap"
+      rel="stylesheet"
+    /&gt;
+
+    &lt;link rel="stylesheet" href="css/styles.css" /&gt;
+  &lt;/head&gt;
+
+  &lt;body&gt;
+    &lt;!-- Estructura base — A desarrollar en T-02 --&gt;
+    &lt;div class="app-layout"&gt;
+      &lt;header class="header"&gt;
+        &lt;div class="header-container container"&gt;
+          &lt;div class="logo"&gt;
+            &lt;span class="logo-icon" aria-hidden="true"&gt;🌤️&lt;/span&gt;
+            &lt;h1 class="logo-name"&gt;Weather Dashboard&lt;/h1&gt;
+          &lt;/div&gt;
+          &lt;div id="header-actions" class="header-actions"&gt;
+            &lt;!-- Espacio reservado para controles adicionales (ejemplo: selector ºC/ºF en T-12) --&gt;
+          &lt;/div&gt;
+        &lt;/div&gt;
+      &lt;/header&gt;
+      &lt;!-- Contenido principal--&gt;
+      &lt;main class="main container"&gt;
+        &lt;!-- 1. Sección de búsqueda--&gt;
+        &lt;section class="search-section" aria-label="Búsqueda de ciudades"&gt;
+          &lt;form id="search-form" class="search-form" novalidate&gt;
+            &lt;div class="search-input-group"&gt;
+              &lt;label for="search-input" class="sr-only"&gt;Nombre de la ciudad&lt;/label&gt;
+              &lt;input
+                type="text"
+                id="search-input"
+                class="search-input"
+                placeholder="Introduce una ciudad (ej. Cajamarca, Madrid...)"
+                autocomplete="off"
+                required
+              /&gt;
+              &lt;button id="btn-search" class="btn btn-primary btn-search" type="submit"&gt;
+                Buscar
+              &lt;/button&gt;
+            &lt;/div&gt;
+            &lt;p id="search-feedback" class="search-feedback hidden" role="alert"&gt;&lt;/p&gt;
+          &lt;/form&gt;
+        &lt;/section&gt;
+
+        &lt;!-- 2. Estado de carga (Spinner)--&gt;
+        &lt;div
+          id="loading-spinner"
+          class="loader-wrapper hidden"
+          aria-live="polite"
+          aria-busy="false"
+        &gt;
+          &lt;div class="spinner"&gt;&lt;/div&gt;
+          &lt;p class="loader-text"&gt;Consultando información meteorológica...&lt;/p&gt;
+        &lt;/div&gt;
+
+        &lt;!-- 3. Estado de error--&gt;
+        &lt;div id="error-card" class="error-card hidden" role="alert"&gt;
+          &lt;div class="error-icon" aria-hidden="true"&gt;⚠️&lt;/div&gt;
+          &lt;div class="error-content"&gt;
+            &lt;h3 class="error-title"&gt;No se pudo obtener el clima&lt;/h3&gt;
+            &lt;p id="error-message" class="error-message"&gt;&lt;/p&gt;
+          &lt;/div&gt;
+        &lt;/div&gt;
+
+        &lt;!-- 4. Sección de resultado del clima--&gt;
+        &lt;section
+          id="weather-container"
+          class="weather-section hidden"
+          aria-label="Resultados meteorológicos"
+        &gt;
+          &lt;article id="weather-card" class="weather-card"&gt;
+            &lt;header class="weather-card-header"&gt;
+              &lt;div&gt;
+                &lt;span class="weather-label"&gt;Condición Actual&lt;/span&gt;
+                &lt;h2 id="weather-city-name" class="weather-city-name"&gt;--&lt;/h2&gt;
+              &lt;/div&gt;
+              &lt;span id="weather-badge" class="badge badge-condition"&gt;--&lt;/span&gt;
+            &lt;/header&gt;
+
+            &lt;div class="weather-main-group"&gt;
+              &lt;div class="weather-temp-wrapper"&gt;
+                &lt;span id="weather-temp" class="weather-temp"&gt;--&lt;/span&gt;
+                &lt;span id="weather-unit" class="weather-unit"&gt;ºC&lt;/span&gt;
+              &lt;/div&gt;
+              &lt;div class="weather-condition-group"&gt;
+                &lt;div id="weather-icon" class="weather-icon" aria-hidden="true"&gt;🌤️&lt;/div&gt;
+                &lt;p id="weather-condition" class="weather-condition"&gt;--&lt;/p&gt;
+              &lt;/div&gt;
+            &lt;/div&gt;
+
+            &lt;div class="weather-metrics"&gt;
+              &lt;div class="metric-item"&gt;
+                &lt;span class="metric-icon" aria-hidden="true"&gt;🌡️&lt;/span&gt;
+                &lt;div class="metric-info"&gt;
+                  &lt;span class="metric-label"&gt;Sensación&lt;/span&gt;
+                  &lt;span id="weather-apparent" class="metric-value"&gt;--&lt;/span&gt;
+                &lt;/div&gt;
+              &lt;/div&gt;
+
+              &lt;div class="metric-item"&gt;
+                &lt;span class="metric-icon" aria-hidden="true"&gt;💧&lt;/span&gt;
+                &lt;div class="metric-info"&gt;
+                  &lt;span class="metric-label"&gt;Humedad&lt;/span&gt;
+                  &lt;span id="weather-humidity" class="metric-value"&gt;--&lt;/span&gt;
+                &lt;/div&gt;
+              &lt;/div&gt;
+
+              &lt;div class="metric-item"&gt;
+                &lt;span class="metric-icon" aria-hidden="true"&gt;💨&lt;/span&gt;
+                &lt;div class="metric-info"&gt;
+                  &lt;span class="metric-label"&gt;Viento&lt;/span&gt;
+                  &lt;span id="weather-wind" class="metric-value"&gt;--&lt;/span&gt;
+                &lt;/div&gt;
+              &lt;/div&gt;
+            &lt;/div&gt;
+          &lt;/article&gt;
+        &lt;/section&gt;
+
+        &lt;!-- 5. Sección de Historial de Búsqueda--&gt;
+        &lt;section
+          id="history-container"
+          class="history-section"
+          aria-label="Historial de ciudades consultadas"
+        &gt;
+          &lt;div class="history-header"&gt;
+            &lt;div class="history-title-group"&gt;
+              &lt;h3 class="history-title"&gt;Historial de búsquedas&lt;/h3&gt;
+              &lt;span id="history-count" class="history-count"&gt;(0)&lt;/span&gt;
+            &lt;/div&gt;
+            &lt;button id="btn-clear-history" class="btn btn-secondary btn-sm btn-clear" type="button"&gt;
+              Limpiar historial
+            &lt;/button&gt;
+          &lt;/div&gt;
+          &lt;div id="history-list" class="history-list"&gt;
+            &lt;p id="history-empty" class="history-empty"&gt;
+              No hay búsquedas recientes. Las ciudades consultadas aparecerán aquí.
+            &lt;/p&gt;
+            &lt;!-- Los chips interactivos (.history-chip) se inyectarán aquí con JavaScript --&gt;
+          &lt;/div&gt;
+        &lt;/section&gt;
+      &lt;/main&gt;
+
+      &lt;!-- Pie de Página--&gt;
+      &lt;footer class="footer"&gt;
+        &lt;div class="footer-container container"&gt;
+          &lt;p&gt;Weather Dashboard © 2026 — Proyecto Integrador G4&lt;/p&gt;
+          &lt;p class="footer-credits"&gt;Datos provistos por Open-Meteo&lt;/p&gt;
+        &lt;/div&gt;
+      &lt;/footer&gt;
+    &lt;/div&gt;
+
+    &lt;!-- Contenedor de Notificaciones Toast Flotantes --&gt;
+    &lt;div id="toast-container" class="toast-container" aria-live="polite"&gt;&lt;/div&gt;
+
+    &lt;!-- Punto de Entrada JavaScript (Módulo ES6)--&gt;
+    &lt;script type="module" src="js/app.js"&gt;&lt;/script&gt;
+  &lt;/body&gt;
+&lt;/html&gt;
+</template>
+  <template id="code-css" data-filename="css/styles.css" data-badge="Sistema de Diseño CSS Completo">/* ==============================================================================
+   Weather Dashboard — Sistema de Diseño CSS
+   Metodología: Mobile First con Media Queries co-localizadas por componente
+   Tokens en :root, Propiedades Lógicas y Breakpoints Modernos (docs/diseno.md)
+   ============================================================================== */
+
+/* Tokens de Diseño Globales (:root) */
+:root {
+  --color-primary: #0284c7;
+  --color-primary-hover: #0369a1;
+  --color-primary-light: #e0f2fe;
+
+  --color-accent: #f59e0b;
+  --color-success: #10b981;
+  --color-danger: #ef4444;
+
+  --error-bg: #fef2f2;
+  --error-border: #fecaca;
+  --error-text: #991b1b;
+
+  --bg-body: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-surface-elevated: #f1f5f9;
+  --bg-surface-frosted: rgba(255, 255, 255, 0.88);
+
+  --border-color: #e2e8f0;
+  --border-color-subtle: #f1f5f9;
+  --border-focus: #38bdf8;
+  --ring-focus: 0 0 0 3px rgba(56, 189, 248, 0.25);
+
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --text-inverted: #ffffff;
+
+  --font-main: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 10px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.1);
+
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  --max-width: 52rem;
+  --transition-fast: 0.15s ease;
+}
+
+/* Reset y Base */
+html {
+  box-sizing: border-box;
+  scroll-behavior: smooth;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: inherit;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-main);
+  background-color: var(--bg-body);
+  color: var(--text-primary);
+  line-height: 1.6;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Contenedor central adaptativo: propiedades lógicas y espaciado fluido clamp() */
+.container {
+  width: 100%;
+  max-width: var(--max-width);
+  margin-inline: auto;
+  padding-inline: clamp(1rem, 3vw, 2.5rem);
+}
+
+/* Utilidades */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* Layout */
+.app-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  padding-block: clamp(1.5rem, 3vw, 2.5rem);
+}
+
+/* Header */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background-color: var(--bg-surface-frosted);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border-color);
+  padding-block: 0.875rem;
+}
+
+.header-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  text-decoration: none;
+}
+
+.logo-icon {
+  font-size: 1.75rem;
+  line-height: 1;
+}
+
+.logo-name {
+  font-size: clamp(1.125rem, 2vw, 1.375rem);
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.025em;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Selector de Unidades (°C / °F) */
+.unit-toggle {
+  display: inline-flex;
+  background-color: var(--bg-surface-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+  padding: 0.1875rem;
+  gap: 0.125rem;
+}
+
+.unit-btn {
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  padding: 0.25rem 0.625rem;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.unit-btn:hover {
+  color: var(--text-primary);
+}
+
+.unit-btn.is-active {
+  background-color: var(--color-primary);
+  color: var(--text-inverted);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Buscador (Mobile First) */
+.search-section {
+  width: 100%;
+}
+
+.search-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.search-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 0.5rem;
+  box-shadow: var(--shadow-sm);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.search-input-group:focus-within {
+  border-color: var(--border-focus);
+  box-shadow: var(--ring-focus), var(--shadow-md);
+}
+
+.search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 0.75rem 1rem;
+  font-family: inherit;
+  font-size: 1rem;
+  color: var(--text-primary);
+  outline: none;
+}
+
+.search-input::placeholder {
+  color: var(--text-muted);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: inherit;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: transform var(--transition-fast), background-color var(--transition-fast), box-shadow var(--transition-fast);
+  white-space: nowrap;
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+.btn-primary {
+  background-color: var(--color-primary);
+  color: var(--text-inverted);
+  box-shadow: 0 2px 4px rgba(2, 132, 199, 0.25);
+}
+
+.btn-primary:hover {
+  background-color: var(--color-primary-hover);
+  box-shadow: 0 4px 8px rgba(2, 132, 199, 0.35);
+}
+
+.btn-secondary {
+  background-color: var(--bg-surface-elevated);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+  background-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+.btn-sm {
+  padding: 0.375rem 0.875rem;
+  font-size: 0.8125rem;
+  border-radius: var(--radius-sm);
+}
+
+.search-feedback {
+  margin-top: 0.5rem;
+  margin-inline: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-danger);
+}
+
+/* Responsive Buscador: En Tablet y Desktop se alinea horizontalmente */
+@media (width &gt; 36em) {
+  .search-input-group {
+    flex-direction: row;
+    gap: 0.5rem;
+  }
+}
+
+/* Estados Asíncronos */
+.loader-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding-block: 2.5rem;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.spinner {
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 3.5px solid var(--border-color);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loader-text {
+  font-size: 0.9375rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.error-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  background-color: var(--error-bg);
+  border: 1px solid var(--error-border);
+  border-radius: var(--radius-lg);
+  color: var(--error-text);
+  box-shadow: var(--shadow-sm);
+}
+
+.error-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.error-content {
+  flex: 1;
+}
+
+.error-title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+  color: var(--error-text);
+}
+
+.error-message {
+  font-size: 0.875rem;
+  line-height: 1.4;
+  opacity: 0.95;
+}
+
+/* Tarjeta del Clima (Mobile First) */
+.weather-section {
+  width: 100%;
+  animation: fadeIn 0.35s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.weather-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: clamp(1.25rem, 2.5vw, 2.25rem);
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+/* Modificadores térmicos dinámicos (T-12) */
+.weather-card--warm {
+  border-color: #fed7aa;
+  box-shadow: 0 10px 20px -3px rgba(245, 158, 11, 0.14), var(--shadow-md);
+}
+
+.weather-card--cold {
+  border-color: #bae6fd;
+  box-shadow: 0 10px 20px -3px rgba(2, 132, 199, 0.14), var(--shadow-md);
+}
+
+.weather-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.weather-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.weather-city-name {
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.2;
+  margin-top: 0.25rem;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.85rem;
+  border-radius: var(--radius-full);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.badge-condition {
+  background-color: var(--color-primary-light);
+  color: var(--color-primary-hover);
+}
+
+.weather-main-group {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding-block: 0.5rem;
+}
+
+.weather-temp-wrapper {
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem;
+}
+
+.weather-temp {
+  font-size: clamp(3.5rem, 6vw, 5rem);
+  font-weight: 800;
+  line-height: 1;
+  color: var(--text-primary);
+  letter-spacing: -0.04em;
+}
+
+.weather-unit {
+  font-size: clamp(1.5rem, 2.5vw, 2rem);
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.weather-condition-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.25rem;
+}
+
+.weather-icon {
+  font-size: 3.5rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.weather-icon img {
+  width: 4.25rem;
+  height: 4.25rem;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.08));
+}
+
+.weather-condition {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  max-width: 12rem;
+  text-align: center;
+}
+
+.weather-metrics {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.875rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color-subtle);
+}
+
+.metric-item {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  background-color: var(--bg-surface-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 0.875rem 1rem;
+  transition: transform var(--transition-fast), border-color var(--transition-fast);
+}
+
+.metric-item:hover {
+  border-color: var(--border-focus);
+  transform: translateY(-2px);
+}
+
+.metric-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  background-color: var(--bg-surface);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.metric-icon img {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.metric-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.metric-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+}
+
+.metric-value {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* Responsive Tarjeta: En Tablet métricas a 3 columnas; en Desktop tarjeta espaciosa */
+@media (width &gt; 36em) {
+  .weather-metrics {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (width &gt; 62em) {
+  .weather-card {
+    padding: 2.5rem;
+  }
+
+  .metric-item {
+    padding: 1.125rem 1.25rem;
+  }
+}
+
+/* Historial */
+.history-section {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1.5rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.history-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.history-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.history-count {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  background-color: var(--color-primary-light);
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--radius-full);
+}
+
+.btn-clear {
+  color: var(--text-secondary);
+}
+
+.btn-clear:hover {
+  color: var(--color-danger);
+  border-color: var(--error-border);
+  background-color: var(--error-bg);
+}
+
+.history-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  min-height: 2.25rem;
+  align-items: center;
+}
+
+.history-empty {
+  font-size: 0.875rem;
+  font-style: italic;
+  color: var(--text-muted);
+  width: 100%;
+}
+
+.history-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.875rem;
+  background-color: var(--bg-surface-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.history-chip:hover {
+  background-color: var(--color-primary-light);
+  color: var(--color-primary-hover);
+  border-color: var(--border-focus);
+  transform: translateY(-1px);
+}
+
+.history-chip:active {
+  transform: scale(0.96);
+}
+
+/* Footer (Mobile First) */
+.footer {
+  border-top: 1px solid var(--border-color);
+  background-color: var(--bg-surface);
+  padding-block: 1.5rem;
+  margin-top: auto;
+}
+
+.footer-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.375rem;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+.footer-credits {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* Responsive Footer: En Tablet y Desktop se alinea en los extremos */
+@media (width &gt; 36em) {
+  .footer-container {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+}
+
+/* Notificaciones Toast */
+.toast-container {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.75rem 1.125rem;
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  font-size: 0.875rem;
+  font-weight: 500;
+  animation: toastIn 0.25s ease-out forwards;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.toast--info {
+  border-left: 4px solid var(--color-primary);
+}
+
+.toast--success {
+  border-left: 4px solid var(--color-success);
+}
+
+.toast--error {
+  border-left: 4px solid var(--color-danger);
+}
+
+.toast-fade-out {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+</template>
+  <template id="code-clima" data-filename="js/models/Clima.js" data-badge="Modelo POO Clima Completo">/**
+ * Modelo Clima (POO)
+ * Representa los datos meteorológicos de una ciudad.
+ */
+export class Clima {
+  constructor(datos) {
+    this.ciudad = datos.ciudad;
+    this.pais = datos.pais || '';
+    this.temperatura = Math.round(datos.temperatura);
+    this.sensacionTermica = Math.round(datos.sensacionTermica);
+    this.humedad = datos.humedad;
+    this.viento = datos.viento;
+    this.condicion = datos.condicion;
+    this.icono = datos.icono;
+    this.codigoWmo = datos.codigoWmo;
+  }
+
+  // Retorna la ciudad y el país (ej: "Cajamarca, Perú")
+  obtenerUbicacionCompleta() {
+    return this.pais ? `${this.ciudad}, ${this.pais}` : this.ciudad;
+  }
+
+  // Retorna la temperatura formateada en °C o °F
+  obtenerTemperaturaFormateada(unidad = 'C') {
+    if (unidad === 'F') {
+      const fahrenheit = Math.round((this.temperatura * 9) / 5 + 32);
+      return `${fahrenheit} °F`;
+    }
+    return `${this.temperatura} °C`;
+  }
+
+  // Retorna la sensación térmica formateada en °C o °F
+  obtenerSensacionFormateada(unidad = 'C') {
+    if (unidad === 'F') {
+      const fahrenheit = Math.round((this.sensacionTermica * 9) / 5 + 32);
+      return `${fahrenheit} °F`;
+    }
+    return `${this.sensacionTermica} °C`;
+  }
+
+  // Evalúa si el clima es cálido (24°C a más)
+  esCalido() {
+    return this.temperatura &gt;= 24;
+  }
+
+  // Mapea el código numérico de la API a su descripción en español e icono SVG (diurno o nocturno)
+  static mapearWMO(codigo, esDia = true) {
+    const iconoDespejado = esDia
+      ? 'assets/icons/weather/clear-day.svg'
+      : 'assets/icons/weather/clear-night.svg';
+
+    const iconoParcial = esDia
+      ? 'assets/icons/weather/partly-cloudy.svg'
+      : 'assets/icons/weather/partly-cloudy-night.svg';
+
+    const mapa = {
+      0: { condicion: 'Cielo despejado', icono: iconoDespejado },
+      1: { condicion: 'Mayormente despejado', icono: iconoDespejado },
+      2: { condicion: 'Parcialmente nublado', icono: iconoParcial },
+      3: { condicion: 'Nublado', icono: 'assets/icons/weather/cloudy.svg' },
+      45: { condicion: 'Niebla', icono: 'assets/icons/weather/fog.svg' },
+      48: { condicion: 'Niebla con escarcha', icono: 'assets/icons/weather/fog.svg' },
+      51: { condicion: 'Llovizna ligera', icono: 'assets/icons/weather/drizzle.svg' },
+      53: { condicion: 'Llovizna moderada', icono: 'assets/icons/weather/drizzle.svg' },
+      55: { condicion: 'Llovizna densa', icono: 'assets/icons/weather/drizzle.svg' },
+      61: { condicion: 'Lluvia ligera', icono: 'assets/icons/weather/rain.svg' },
+      63: { condicion: 'Lluvia moderada', icono: 'assets/icons/weather/rain.svg' },
+      65: { condicion: 'Lluvia fuerte', icono: 'assets/icons/weather/rain.svg' },
+      71: { condicion: 'Nieve ligera', icono: 'assets/icons/weather/snow.svg' },
+      73: { condicion: 'Nieve moderada', icono: 'assets/icons/weather/snow.svg' },
+      75: { condicion: 'Nieve intensa', icono: 'assets/icons/weather/snow.svg' },
+      77: { condicion: 'Granos de nieve', icono: 'assets/icons/weather/snow.svg' },
+      80: { condicion: 'Chubascos ligeros', icono: 'assets/icons/weather/showers.svg' },
+      81: { condicion: 'Chubascos moderados', icono: 'assets/icons/weather/showers.svg' },
+      82: { condicion: 'Chubascos violentos', icono: 'assets/icons/weather/showers.svg' },
+      95: { condicion: 'Tormenta eléctrica', icono: 'assets/icons/weather/thunderstorm.svg' },
+      96: { condicion: 'Tormenta con granizo', icono: 'assets/icons/weather/thunderstorm.svg' },
+      99: { condicion: 'Tormenta fuerte con granizo', icono: 'assets/icons/weather/thunderstorm.svg' },
+    };
+
+    return mapa[codigo] || {
+      condicion: 'Condición variable',
+      icono: 'assets/icons/weather/partly-cloudy.svg',
+    };
+  }
+}
+</template>
+  <template id="code-historial" data-filename="js/models/Historial.js" data-badge="Modelo POO Historial Completo">/**
+ * Modelo Historial (POO)
+ * Gestiona la lista de ciudades buscadas con persistencia en localStorage.
+ */
+export class Historial {
+  constructor() {
+    this._ciudades = [];
+    this.limiteMaximo = 8;
+    this.storageKey = 'weather_dashboard_history';
+    this.cargarDeStorage();
+  }
+
+  // Retorna la cantidad total de ciudades guardadas
+  get total() {
+    return this._ciudades.length;
+  }
+
+  // Agrega una ciudad al inicio sin duplicados
+  agregar(ciudad) {
+    const nombre = ciudad.trim();
+    if (!nombre) return;
+
+    // Si ya existía, la quitamos para no duplicar
+    this._ciudades = this._ciudades.filter(
+      (item) =&gt; item.toLowerCase() !== nombre.toLowerCase()
+    );
+
+    // Insertar en la primera posición
+    this._ciudades.unshift(nombre);
+
+    // Mantener como máximo 8 ciudades
+    if (this._ciudades.length &gt; this.limiteMaximo) {
+      this._ciudades = this._ciudades.slice(0, this.limiteMaximo);
+    }
+
+    this.guardarEnStorage();
+  }
+
+  // Elimina una ciudad específica del historial
+  eliminar(ciudad) {
+    this._ciudades = this._ciudades.filter(
+      (item) =&gt; item.toLowerCase() !== ciudad.trim().toLowerCase()
+    );
+    this.guardarEnStorage();
+  }
+
+  // Vacía todo el historial y limpia localStorage
+  limpiar() {
+    this._ciudades = [];
+    localStorage.removeItem(this.storageKey);
+  }
+
+  // Retorna una copia de la lista para no mutar el arreglo original
+  obtenerTodas() {
+    return [...this._ciudades];
+  }
+
+  // Guarda el arreglo en formato de texto JSON en localStorage
+  guardarEnStorage() {
+    try {
+      localStorage.setItem(this.storageKey, JSON.stringify(this._ciudades));
+    } catch (e) {
+      console.warn('Error al guardar en localStorage', e);
+    }
+  }
+
+  // Lee el texto de localStorage y lo convierte de vuelta a arreglo
+  cargarDeStorage() {
+    try {
+      const guardado = localStorage.getItem(this.storageKey);
+      if (guardado) {
+        this._ciudades = JSON.parse(guardado);
+      }
+    } catch (e) {
+      console.warn('Error al cargar de localStorage', e);
+      this._ciudades = [];
+    }
+  }
+}
+</template>
+  <template id="code-service" data-filename="js/services/WeatherService.js" data-badge="Servicio API Open-Meteo Completo">/**
+ * Servicio Meteorológico (API Service)
+ * Consume la API Open-Meteo usando fetch y async/await.
+ */
+import { Clima } from '../models/Clima.js';
+
+export class WeatherService {
+  async consultarClima(ciudad) {
+    const nombre = ciudad.trim();
+    if (!nombre) {
+      throw new Error('Por favor, ingresa el nombre de una ciudad.');
+    }
+
+    // 1. Obtener coordenadas de la ciudad (Geocoding API)
+    const urlGeo = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(
+      nombre
+    )}&amp;count=1&amp;language=es&amp;format=json`;
+
+    let resGeo;
+    try {
+      resGeo = await fetch(urlGeo);
+    } catch (e) {
+      throw new Error('Sin conexión a internet. Verifica tu red.');
+    }
+
+    const dataGeo = await resGeo.json();
+    if (!dataGeo.results || dataGeo.results.length === 0) {
+      throw new Error(`No se encontró la ciudad "${nombre}". Verifica la ortografía.`);
+    }
+
+    const ubicacion = dataGeo.results[0];
+
+    // 2. Obtener el pronóstico del clima con latitud y longitud (Forecast API)
+    const urlClima = `https://api.open-meteo.com/v1/forecast?latitude=${ubicacion.latitude}&amp;longitude=${ubicacion.longitude}&amp;current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,is_day&amp;timezone=auto`;
+
+    let resClima;
+    try {
+      resClima = await fetch(urlClima);
+    } catch (e) {
+      throw new Error('Error al conectar con el servidor meteorológico.');
+    }
+
+    const dataClima = await resClima.json();
+    const actual = dataClima.current;
+
+    // 3. Mapear condición e icono SVG según el código WMO y ciclo día/noche
+    const esDia = actual.is_day !== 0;
+    const infoWmo = Clima.mapearWMO(actual.weather_code, esDia);
+
+    // 4. Retornar una nueva instancia de Clima
+    return new Clima({
+      ciudad: ubicacion.name,
+      pais: ubicacion.country,
+      temperatura: actual.temperature_2m,
+      sensacionTermica: actual.apparent_temperature,
+      humedad: actual.relative_humidity_2m,
+      viento: actual.wind_speed_10m,
+      condicion: infoWmo.condicion,
+      icono: infoWmo.icono,
+      codigoWmo: actual.weather_code,
+      esDia,
+    });
+  }
+}
+</template>
+  <template id="code-dom" data-filename="js/ui/DomRenderer.js" data-badge="Capa UI DomRenderer Completa">/**
+ * Renderizador de Interfaz (DomRenderer)
+ * Centraliza la manipulación del DOM con métodos estándar de JavaScript.
+ */
+export class DomRenderer {
+  constructor() {
+    // 1. Buscador
+    this.searchForm = document.getElementById('search-form');
+    this.searchInput = document.getElementById('search-input');
+    this.btnSearch = document.getElementById('btn-search');
+    this.searchFeedback = document.getElementById('search-feedback');
+
+    // 2. Estados de Carga y Error
+    this.loadingSpinner = document.getElementById('loading-spinner');
+    this.errorCard = document.getElementById('error-card');
+    this.errorMessage = document.getElementById('error-message');
+
+    // 3. Tarjeta del Clima
+    this.weatherContainer = document.getElementById('weather-container');
+    this.weatherCard = document.getElementById('weather-card');
+    this.weatherCityName = document.getElementById('weather-city-name');
+    this.weatherBadge = document.getElementById('weather-badge');
+    this.weatherTemp = document.getElementById('weather-temp');
+    this.weatherUnit = document.getElementById('weather-unit');
+    this.weatherIcon = document.getElementById('weather-icon');
+    this.weatherCondition = document.getElementById('weather-condition');
+    this.weatherApparent = document.getElementById('weather-apparent');
+    this.weatherHumidity = document.getElementById('weather-humidity');
+    this.weatherWind = document.getElementById('weather-wind');
+
+    // 4. Historial
+    this.historyContainer = document.getElementById('history-container');
+    this.historyList = document.getElementById('history-list');
+    this.historyCount = document.getElementById('history-count');
+    this.historyEmpty = document.getElementById('history-empty');
+    this.btnClearHistory = document.getElementById('btn-clear-history');
+
+    // 5. Header y Notificaciones
+    this.headerActions = document.getElementById('header-actions');
+    this.toastContainer = document.getElementById('toast-container');
+  }
+
+  // Muestra u oculta el spinner de carga
+  mostrarCargando(visible) {
+    if (!this.loadingSpinner) return;
+
+    // Deshabilitar botón e input mientras consulta
+    if (this.btnSearch) this.btnSearch.disabled = visible;
+    if (this.searchInput) this.searchInput.disabled = visible;
+
+    if (visible) {
+      this.loadingSpinner.classList.remove('hidden');
+      this.ocultarError();
+      if (this.weatherContainer) this.weatherContainer.classList.add('hidden');
+    } else {
+      this.loadingSpinner.classList.add('hidden');
+    }
+  }
+
+  // Muestra la tarjeta de error con el mensaje correspondiente
+  mostrarError(mensaje) {
+    if (!this.errorCard || !this.errorMessage) return;
+
+    this.errorMessage.textContent = mensaje || 'Ocurrió un error al consultar el clima.';
+    this.errorCard.classList.remove('hidden');
+
+    if (this.weatherContainer) this.weatherContainer.classList.add('hidden');
+    this.mostrarCargando(false);
+  }
+
+  // Oculta el mensaje de error
+  ocultarError() {
+    if (!this.errorCard) return;
+    this.errorCard.classList.add('hidden');
+  }
+
+  // Muestra advertencia bajo el input si está vacío
+  mostrarFeedbackBusqueda(mensaje) {
+    if (!this.searchFeedback) return;
+
+    if (mensaje) {
+      this.searchFeedback.textContent = mensaje;
+      this.searchFeedback.classList.remove('hidden');
+    } else {
+      this.searchFeedback.textContent = '';
+      this.searchFeedback.classList.add('hidden');
+    }
+  }
+
+  // Actualiza los datos de la tarjeta del clima
+  renderizarClima(clima, unidad = 'C') {
+    if (!clima || !this.weatherContainer) return;
+
+    const esFahrenheit = unidad === 'F';
+    const temp = esFahrenheit
+      ? Math.round((clima.temperatura * 9) / 5 + 32)
+      : clima.temperatura;
+    const sensacion = esFahrenheit
+      ? Math.round((clima.sensacionTermica * 9) / 5 + 32)
+      : clima.sensacionTermica;
+    const simbolo = esFahrenheit ? '°F' : '°C';
+
+    this.weatherCityName.textContent = clima.obtenerUbicacionCompleta();
+    this.weatherBadge.textContent = clima.condicion;
+    this.weatherTemp.textContent = temp;
+    this.weatherUnit.textContent = simbolo;
+    this.weatherCondition.textContent = clima.condicion;
+
+    this.weatherApparent.textContent = `${sensacion} ${simbolo}`;
+    this.weatherHumidity.textContent = `${clima.humedad} %`;
+    this.weatherWind.textContent = `${clima.viento} km/h`;
+
+    // Renderizar imagen SVG del clima
+    if (this.weatherIcon) {
+      this.weatherIcon.innerHTML = `&lt;img src="${clima.icono}" alt="${clima.condicion}" width="64" height="64"&gt;`;
+    }
+
+    // Modificadores dinámicos según temperatura
+    if (this.weatherCard) {
+      this.weatherCard.classList.remove('weather-card--warm', 'weather-card--cold');
+      if (clima.temperatura &gt;= 24) {
+        this.weatherCard.classList.add('weather-card--warm');
+      } else if (clima.temperatura &lt; 10) {
+        this.weatherCard.classList.add('weather-card--cold');
+      }
+    }
+
+    // Mostrar tarjeta
+    this.weatherContainer.classList.remove('hidden');
+    this.ocultarError();
+    this.mostrarCargando(false);
+  }
+
+  // Crea los botones de historial dinámicamente con createElement y appendChild
+  renderizarHistorial(ciudades = []) {
+    if (!this.historyList || !this.historyCount) return;
+
+    this.historyCount.textContent = `(${ciudades.length})`;
+    this.historyList.innerHTML = '';
+
+    if (ciudades.length === 0) {
+      if (this.historyEmpty) {
+        this.historyEmpty.classList.remove('hidden');
+        this.historyList.appendChild(this.historyEmpty);
+      }
+      return;
+    }
+
+    if (this.historyEmpty) {
+      this.historyEmpty.classList.add('hidden');
+    }
+
+    ciudades.forEach((ciudad) =&gt; {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'history-chip';
+      chip.dataset.city = ciudad;
+      chip.textContent = `📍 ${ciudad}`;
+      this.historyList.appendChild(chip);
+    });
+  }
+
+  // Renderiza el selector de unidades (°C / °F) en el encabezado
+  renderizarSelectorUnidades(unidadActual, onCambio) {
+    if (!this.headerActions) return;
+
+    this.headerActions.innerHTML = '';
+
+    const contenedor = document.createElement('div');
+    contenedor.className = 'unit-toggle';
+
+    const btnC = document.createElement('button');
+    btnC.type = 'button';
+    btnC.className = `unit-btn ${unidadActual === 'C' ? 'is-active' : ''}`;
+    btnC.textContent = '°C';
+    btnC.addEventListener('click', () =&gt; onCambio('C'));
+
+    const btnF = document.createElement('button');
+    btnF.type = 'button';
+    btnF.className = `unit-btn ${unidadActual === 'F' ? 'is-active' : ''}`;
+    btnF.textContent = '°F';
+    btnF.addEventListener('click', () =&gt; onCambio('F'));
+
+    contenedor.appendChild(btnC);
+    contenedor.appendChild(btnF);
+    this.headerActions.appendChild(contenedor);
+  }
+
+  // Muestra una notificación temporal flotante
+  mostrarToast(mensaje, tipo = 'info') {
+    if (!this.toastContainer || !mensaje) return;
+
+    const toast = document.createElement('div');
+    toast.className = `toast toast--${tipo}`;
+    toast.textContent = mensaje;
+
+    this.toastContainer.appendChild(toast);
+
+    setTimeout(() =&gt; {
+      toast.remove();
+    }, 3000);
+  }
+}
+</template>
+  <template id="code-app" data-filename="js/app.js" data-badge="Controlador Principal App Completo">/**
+ * Weather Dashboard — Controlador Principal de la Aplicación
+ * Orquesta los eventos del usuario, las peticiones a la API y la actualización del DOM.
+ */
+
+import { WeatherService } from './services/WeatherService.js';
+import { Historial } from './models/Historial.js';
+import { DomRenderer } from './ui/DomRenderer.js';
+
+export class App {
+  constructor() {
+    this.weatherService = new WeatherService();
+    this.historial = new Historial();
+    this.ui = new DomRenderer();
+
+    this.climaActual = null;
+    this.unidad = localStorage.getItem('weather_dashboard_unit') || 'C';
+  }
+
+  // Inicializa la aplicación y registra los eventos
+  iniciar() {
+    this.configurarEventos();
+    this.cargarEstadoInicial();
+  }
+
+  // Carga el historial guardado, selector de unidades y consulta inicial
+  cargarEstadoInicial() {
+    const ciudades = this.historial.obtenerTodas();
+    this.ui.renderizarHistorial(ciudades);
+    this.ui.renderizarSelectorUnidades(this.unidad, (nuevaUnidad) =&gt; this.cambiarUnidad(nuevaUnidad));
+
+    const ciudadInicial = ciudades.length &gt; 0 ? ciudades[0] : 'Lima';
+    this.buscar(ciudadInicial);
+  }
+
+  // Registra los eventos del formulario y del historial
+  configurarEventos() {
+    // 1. Envío del formulario de búsqueda
+    if (this.ui.searchForm) {
+      this.ui.searchForm.addEventListener('submit', (evento) =&gt; {
+        evento.preventDefault();
+        const texto = this.ui.searchInput ? this.ui.searchInput.value : '';
+        this.buscar(texto);
+      });
+    }
+
+    // 2. Limpiar mensaje de aviso al escribir en el campo
+    if (this.ui.searchInput) {
+      this.ui.searchInput.addEventListener('input', () =&gt; {
+        this.ui.mostrarFeedbackBusqueda('');
+      });
+    }
+
+    // 3. Clic en una ciudad del historial (delegación de eventos)
+    if (this.ui.historyList) {
+      this.ui.historyList.addEventListener('click', (evento) =&gt; {
+        const botonChip = evento.target.closest('.history-chip');
+        if (!botonChip) return;
+
+        const ciudad = botonChip.dataset.city;
+        if (ciudad) {
+          if (this.ui.searchInput) {
+            this.ui.searchInput.value = ciudad;
+          }
+          this.buscar(ciudad);
+        }
+      });
+    }
+
+    // 4. Botón para vaciar todo el historial
+    if (this.ui.btnClearHistory) {
+      this.ui.btnClearHistory.addEventListener('click', () =&gt; {
+        if (this.historial.total === 0) return;
+
+        this.historial.limpiar();
+        this.ui.renderizarHistorial(this.historial.obtenerTodas());
+        this.ui.mostrarToast('Historial vaciado.', 'info');
+      });
+    }
+  }
+
+  // Realiza la búsqueda de clima de una ciudad
+  async buscar(nombreCiudad) {
+    const ciudad = (nombreCiudad || '').trim();
+
+    // Validar que no esté vacío
+    if (!ciudad) {
+      this.ui.mostrarFeedbackBusqueda('Por favor, ingresa el nombre de una ciudad.');
+      if (this.ui.searchInput) this.ui.searchInput.focus();
+      return;
+    }
+
+    this.ui.mostrarFeedbackBusqueda('');
+
+    try {
+      this.ui.mostrarCargando(true);
+
+      // Consultar API mediante el servicio
+      const datosClima = await this.weatherService.consultarClima(ciudad);
+      this.climaActual = datosClima;
+
+      // Renderizar datos en pantalla
+      this.ui.renderizarClima(datosClima, this.unidad);
+
+      // Guardar en el historial
+      this.historial.agregar(datosClima.ciudad);
+      this.ui.renderizarHistorial(this.historial.obtenerTodas());
+
+      this.ui.mostrarToast(`Clima cargado para ${datosClima.obtenerUbicacionCompleta()}`, 'success');
+    } catch (error) {
+      this.ui.mostrarError(error.message);
+    } finally {
+      this.ui.mostrarCargando(false);
+    }
+  }
+
+  // Cambia la unidad de medida (°C o °F)
+  cambiarUnidad(nuevaUnidad) {
+    if (this.unidad === nuevaUnidad) return;
+
+    this.unidad = nuevaUnidad;
+    localStorage.setItem('weather_dashboard_unit', nuevaUnidad);
+
+    this.ui.renderizarSelectorUnidades(this.unidad, (u) =&gt; this.cambiarUnidad(u));
+
+    // Si ya hay un clima en pantalla, refrescar su temperatura
+    if (this.climaActual) {
+      this.ui.renderizarClima(this.climaActual, this.unidad);
+    }
+  }
+}
+
+// Iniciar aplicación cuando el documento HTML esté cargado
+if (typeof document !== 'undefined') {
+  document.addEventListener('DOMContentLoaded', () =&gt; {
+    const app = new App();
+    app.iniciar();
+  });
+}
+</template>
+
+  <script>
+    const slides = document.querySelectorAll('.slide');
+    const counter = document.getElementById('slide-counter');
+    const reqBadge = document.getElementById('req-badge');
+    const btnPrev = document.getElementById('btn-prev');
+    const btnNext = document.getElementById('btn-next');
+
+    const badges = [
+      "PORTADA — GRUPO G4",
+      "PROPÓSITO Y ENUNCIADO — SECCIÓN 1 Y 2",
+      "HTML5 SEMÁNTICO — SECCIÓN 13 Y 6",
+      "CSS3 MOBILE FIRST — SECCIÓN 13",
+      "ARQUITECTURA Y POO — SECCIÓN 9 Y 14",
+      "CLASE CLIMA (CONSTRUCTOR) — SECCIÓN 9 Y 3",
+      "MÉTODOS DE DOMINIO Y °C/°F — SECCIÓN 9 Y 12",
+      "MAPEO WMO E ÍCONOS — SECCIÓN 3 Y 9",
+      "HISTORIAL CON ARREGLOS — SECCIÓN 8 Y 1",
+      "DEDUPLICACIÓN Y LÍMITE — SECCIÓN 8",
+      "PERSISTENCIA LOCALSTORAGE — SECCIÓN 8 Y 12",
+      "PROMESAS Y FETCH — SECCIÓN 4",
+      "ASYNC / AWAIT — SECCIÓN 5",
+      "PIPELINE Y CONTROL DE ERRORES — SECCIÓN 3 Y 10",
+      "CACHÉ DEL DOM — SECCIÓN 6",
+      "RENDERIZADO CLIMÁTICO — SECCIÓN 6 Y 3",
+      "ESTADOS CARGA Y ERROR — SECCIÓN 10 Y 11",
+      "HISTORIAL EN EL DOM — SECCIÓN 6 Y 8",
+      "PUNTO DE ENTRADA — SECCIÓN 13 Y 14",
+      "EVENTOS DEL BUSCADOR — SECCIÓN 2.A Y 7",
+      "DELEGACIÓN Y TOGGLE — SECCIÓN 7 Y 12",
+      "ORQUESTACIÓN TRY/CATCH/FINALLY — SECCIÓN 10 Y 11",
+      "DEMOSTRACIÓN EN VIVO Y CIERRE — SECCIÓN 15"
+    ];
+
+    let currentSlide = 0;
+
+    const updateSlide = (index) => {
+      slides.forEach((slide, i) => {
+        slide.classList.toggle('active', i === index);
+      });
+      currentSlide = index;
+      if (counter) counter.textContent = 'Diapositiva ' + (currentSlide + 1) + ' de ' + slides.length;
+      if (reqBadge) reqBadge.textContent = badges[currentSlide] || "PROYECTO INTEGRADOR G4";
+
+      if (btnPrev) btnPrev.textContent = currentSlide === 0 ? "Portada" : "← Anterior";
+      if (btnNext) btnNext.textContent = currentSlide === slides.length - 1 ? "Inicio ↺" : "Siguiente →";
+    };
+
+    if (btnPrev) {
+      btnPrev.addEventListener('click', () => {
+        let prevIndex = currentSlide - 1;
+        if (prevIndex < 0) prevIndex = 0;
+        updateSlide(prevIndex);
+      });
+    }
+
+    if (btnNext) {
+      btnNext.addEventListener('click', () => {
+        let nextIndex = currentSlide + 1;
+        if (nextIndex >= slides.length) nextIndex = 0;
+        updateSlide(nextIndex);
+      });
+    }
+
+    // ── Resaltado Nativo One Dark Pro (Autocontenido sin dependencias externas) ──
+    function escapeHtml(str) {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function formatOneDark(code, filename) {
+      const isCss = filename.endsWith('.css');
+      const isHtml = filename.endsWith('.html');
+      let raw = code.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+
+      if (isCss) {
+        const REG_CSS = /(\/\*[\s\S]*?\*\/)|(#(?:[0-9a-fA-F]{3,8})\b)|(var\(--[a-zA-Z0-9_\-]+\))|([a-zA-Z\-]+)(?=\s*:)|(\b\d+(?:\.\d+)?(?:px|rem|em|vh|vw|%|s|ms)?\b)/g;
+        let last = 0, out = '', m;
+        while ((m = REG_CSS.exec(raw)) !== null) {
+          out += escapeHtml(raw.slice(last, m.index));
+          const [match, cm, hex, vVar, prop, num] = m;
+          if (cm) out += '<span class="token comment">' + escapeHtml(cm) + '</span>';
+          else if (hex) out += '<span class="color-swatch" style="background-color:' + hex + '"></span><span class="token number">' + hex + '</span>';
+          else if (vVar) out += '<span class="token function">' + vVar + '</span>';
+          else if (prop) out += '<span class="token property">' + prop + '</span>';
+          else if (num) out += '<span class="token number">' + num + '</span>';
+          else out += escapeHtml(match);
+          last = REG_CSS.lastIndex;
+        }
+        out += escapeHtml(raw.slice(last));
+        return out;
+      }
+
+      if (isHtml) {
+        const REG_HTML = new RegExp(
+          '(<' + '!--[\\s\\S]*?-->)|' +
+          '(</?[a-zA-Z0-9-]+)|' +
+          '([a-zA-Z-]+(?==))|' +
+          '("[^"]*"|\'[^\']*\')',
+          'g'
+        );
+        let last = 0, out = '', m;
+        while ((m = REG_HTML.exec(raw)) !== null) {
+          out += escapeHtml(raw.slice(last, m.index));
+          const [match, cm, tag, attr, val] = m;
+          if (cm) out += '<span class="token comment">' + escapeHtml(cm) + '</span>';
+          else if (tag) out += '<span class="token tag">' + escapeHtml(tag) + '</span>';
+          else if (attr) out += '<span class="token attr-name">' + attr + '</span>';
+          else if (val) out += '<span class="token string">' + escapeHtml(val) + '</span>';
+          else out += escapeHtml(match);
+          last = REG_HTML.lastIndex;
+        }
+        out += escapeHtml(raw.slice(last));
+        return out;
+      }
+
+      // JavaScript One Dark Pro
+      const REG_JS = /(\/\*[\s\S]*?\*\/|\/\/[^\n]*)|(`(?:\\.|[^`])*`|"(?:\\.|[^"])*"|'(?:\\.|[^'])*')|\b(true|false)\b|\b(this)\b|\b(\d+(?:\.\d+)?)\b|\b(async|await|break|case|catch|class|const|continue|debugger|default|delete|do|else|export|extends|finally|for|from|function|if|import|in|instanceof|let|new|null|of|return|super|switch|throw|try|typeof|undefined|var|void|while|with|yield)\b|\b([a-zA-Z_$][a-zA-Z0-9_$]*)(?=\s*\()/g;
+
+      let last = 0, out = '', m;
+      while ((m = REG_JS.exec(raw)) !== null) {
+        out += escapeHtml(raw.slice(last, m.index));
+        const [match, cm, str, bool, th, num, kw, fn] = m;
+        if (cm) out += '<span class="token comment">' + escapeHtml(cm) + '</span>';
+        else if (str) out += '<span class="token string">' + escapeHtml(str) + '</span>';
+        else if (bool) out += '<span class="token boolean">' + bool + '</span>';
+        else if (th) out += '<span class="token keyword-this">' + th + '</span>';
+        else if (num) out += '<span class="token number">' + num + '</span>';
+        else if (kw) out += '<span class="token keyword">' + kw + '</span>';
+        else if (fn) out += '<span class="token function">' + fn + '</span>';
+        else out += escapeHtml(match);
+        last = REG_JS.lastIndex;
+      }
+      out += escapeHtml(raw.slice(last));
+      return out;
+    }
+
+    function renderCodeEditor(rawCode, filename) {
+      const highlighted = formatOneDark(rawCode, filename);
+      const lines = highlighted.split('\n');
+      return lines.map((lineHtml, idx) => {
+        const lineNum = idx + 1;
+        return '<div class="editor-line"><span class="line-num">' + lineNum + '</span><span class="line-code">' + (lineHtml || ' ') + '</span></div>';
+      }).join('');
+    }
+
+    // Modal de Código Completo con Resaltado One Dark Pro
+    const codeModal = document.getElementById('code-modal');
+    const modalFilename = document.getElementById('modal-filename');
+    const modalBadge = document.getElementById('modal-badge');
+    const modalCodeContent = document.getElementById('modal-code-content');
+    const modalLineCount = document.getElementById('modal-line-count');
+    const modalCloseBtn = document.getElementById('modal-close-btn');
+
+    function openModal(templateId) {
+      const tpl = document.getElementById(templateId);
+      if (!tpl || !codeModal) return;
+
+      const filename = tpl.dataset.filename || 'archivo.js';
+      const badge = tpl.dataset.badge || 'Código Completo';
+      const rawCode = tpl.innerHTML;
+
+      if (modalFilename) modalFilename.textContent = filename;
+      if (modalBadge) modalBadge.textContent = badge;
+
+      const lineTotal = rawCode.split('\n').length;
+      if (modalLineCount) modalLineCount.textContent = 'Archivo completo: ' + lineTotal + ' líneas';
+
+      if (modalCodeContent) {
+        modalCodeContent.innerHTML = renderCodeEditor(rawCode, filename);
+      }
+
+      codeModal.classList.remove('hidden');
+      const bodyEl = codeModal.querySelector('.code-modal-body');
+      if (bodyEl) {
+        bodyEl.scrollTop = 0;
+        bodyEl.scrollLeft = 0;
+      }
+    }
+
+    function closeModal() {
+      if (codeModal) codeModal.classList.add('hidden');
+    }
+
+    document.querySelectorAll('.btn-expand-code').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const tplId = btn.dataset.template;
+        if (tplId) openModal(tplId);
+      });
+    });
+
+    if (modalCloseBtn) {
+      modalCloseBtn.addEventListener('click', closeModal);
+    }
+
+    if (codeModal) {
+      codeModal.addEventListener('click', (e) => {
+        if (e.target === codeModal) closeModal();
+      });
+    }
+
+    // Navegación por teclado
+    window.addEventListener('keydown', (e) => {
+      if (codeModal && !codeModal.classList.contains('hidden')) {
+        if (e.key === 'Escape') closeModal();
+        return;
+      }
+
+      if (e.key === 'ArrowRight' || e.key === ' ') {
+        if (btnNext) btnNext.click();
+      } else if (e.key === 'ArrowLeft') {
+        if (btnPrev) btnPrev.click();
+      } else if (e.key === 'f' || e.key === 'F') {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        } else {
+          document.exitFullscreen().catch(() => {});
+        }
+      }
+    });
+
+    // Impresión a PDF (Ctrl + P)
+    window.addEventListener('beforeprint', () => {
+      slides.forEach((slide) => {
+        slide.style.display = 'flex';
+        slide.style.opacity = '1';
+        slide.classList.add('active');
+      });
+    });
+
+    window.addEventListener('afterprint', () => {
+      slides.forEach(slide => {
+        slide.style.display = '';
+        slide.style.opacity = '';
+      });
+      updateSlide(currentSlide);
+    });
+  </script>
+</body>
+</html>
