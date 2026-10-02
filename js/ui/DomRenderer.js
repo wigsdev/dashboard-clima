@@ -117,6 +117,8 @@ export class DomRenderer {
       const img = document.createElement('img');
       img.src = clima.icono;
       img.alt = clima.condicion;
+      img.width = 64;
+      img.height = 64;
       this.weatherIcon.replaceChildren(img);
     }
     // 4. Modificadores visuales dinámicos según temperatura
